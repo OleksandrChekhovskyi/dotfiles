@@ -1,0 +1,79 @@
+// Use Super instead of Ctrl as the primary modifier for mode switching.
+// Ctrl is kept as fallback in text-input modes (entersearch, renametab, renamepane, prompt, tmux).
+keybinds {
+    // Remove default Ctrl mode-switching keys
+    unbind "Ctrl g" "Ctrl q" "Ctrl p" "Ctrl n" "Ctrl s" "Ctrl o" "Ctrl t" "Ctrl h"
+
+    // Super "back to normal" within each mode
+    locked {
+        bind "Super g" { SwitchToMode "Normal"; }
+    }
+    pane {
+        bind "Super p" { SwitchToMode "Normal"; }
+    }
+    resize {
+        bind "Super n" { SwitchToMode "Normal"; }
+    }
+    move {
+        bind "Super h" { SwitchToMode "Normal"; }
+    }
+    scroll {
+        bind "Super s" { SwitchToMode "Normal"; }
+    }
+    session {
+        bind "Super o" { SwitchToMode "Normal"; }
+    }
+    tab {
+        bind "Super t" { SwitchToMode "Normal"; }
+    }
+    search {
+        bind "Ctrl s" { SwitchToMode "Normal"; }
+    }
+
+    // Super mode-switching (excluded from text-input modes)
+    shared_except "locked" "entersearch" "renametab" "renamepane" "prompt" "tmux" {
+        bind "Super g" { SwitchToMode "Locked"; }
+        bind "Super q" { Quit; }
+    }
+    shared_except "locked" "pane" "entersearch" "renametab" "renamepane" "prompt" "tmux" {
+        bind "Super p" { SwitchToMode "Pane"; }
+    }
+    shared_except "locked" "resize" "entersearch" "renametab" "renamepane" "prompt" "tmux" {
+        bind "Super n" { SwitchToMode "Resize"; }
+    }
+    shared_except "locked" "scroll" "entersearch" "renametab" "renamepane" "prompt" "tmux" {
+        bind "Super s" { SwitchToMode "Scroll"; }
+    }
+    shared_except "locked" "entersearch" "renametab" "renamepane" "session" "prompt" "tmux" {
+        bind "Super o" { SwitchToMode "Session"; }
+    }
+    shared_except "locked" "tab" "entersearch" "renametab" "renamepane" "prompt" "tmux" {
+        bind "Super t" { SwitchToMode "Tab"; }
+    }
+    shared_except "locked" "entersearch" "renametab" "renamepane" "move" "prompt" "tmux" {
+        bind "Super h" { SwitchToMode "Move"; }
+    }
+
+    // Ctrl fallback for text-input modes
+    shared_among "entersearch" "renametab" "renamepane" "prompt" "tmux" {
+        bind "Ctrl g" { SwitchToMode "Locked"; }
+        bind "Ctrl h" { SwitchToMode "Move"; }
+        bind "Ctrl n" { SwitchToMode "Resize"; }
+        bind "Ctrl o" { SwitchToMode "Session"; }
+        bind "Ctrl p" { SwitchToMode "Pane"; }
+        bind "Ctrl q" { Quit; }
+        bind "Ctrl s" { SwitchToMode "Scroll"; }
+        bind "Ctrl t" { SwitchToMode "Tab"; }
+    }
+}
+
+ui {
+    pane_frames {
+        hide_session_name true
+    }
+}
+
+theme "catppuccin-macchiato"
+default_layout "compact"
+pane_frames false
+show_startup_tips false
