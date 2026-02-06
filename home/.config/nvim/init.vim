@@ -1,6 +1,7 @@
 set tabstop=4
 set softtabstop=4
 set shiftwidth=4
+set textwidth=0
 set mouse=
 set spell
 set noswapfile
@@ -10,3 +11,5 @@ highlight Normal guibg=none
 highlight NonText guibg=none
 highlight Normal ctermbg=none
 highlight NonText ctermbg=none
+
+autocmd FileType * set textwidth=0
