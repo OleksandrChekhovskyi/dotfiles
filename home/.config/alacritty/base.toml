@@ -8,4 +8,5 @@ family = "Hack"
 bindings = [
 	{ key = "Return", mods = "Shift", chars = "\n" },
 	{ key = "K", mods = "Control|Shift", chars = "\f" },
+	{ key = "N", mods = "Control|Shift", action = "CreateNewWindow" },
 ]
