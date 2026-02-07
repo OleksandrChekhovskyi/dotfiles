@@ -47,6 +47,7 @@ vim.opt.scrolloff = 8
 vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 3
+vim.opt.cmdheight = 0
 
 -- Splits
 vim.opt.splitbelow = true
