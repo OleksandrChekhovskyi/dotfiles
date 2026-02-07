@@ -1,0 +1,489 @@
+-- nvim-ide: standalone Neovim IDE config (NVIM_APPNAME=nvim-ide)
+
+--------------------------------------------------------------------------------
+-- Bootstrap lazy.nvim
+--------------------------------------------------------------------------------
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not vim.uv.fs_stat(lazypath) then
+  vim.fn.system({
+    "git", "clone", "--filter=blob:none",
+    "https://github.com/folke/lazy.nvim.git",
+    "--branch=stable",
+    lazypath,
+  })
+end
+vim.opt.rtp:prepend(lazypath)
+
+--------------------------------------------------------------------------------
+-- Leader keys (must be set before loading plugins)
+--------------------------------------------------------------------------------
+vim.g.mapleader = " "
+vim.g.maplocalleader = "\\"
+
+--------------------------------------------------------------------------------
+-- Vim options
+--------------------------------------------------------------------------------
+-- Tabs & indentation
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+vim.opt.smartindent = true
+
+-- Line numbers
+vim.opt.number = true
+vim.opt.relativenumber = false
+
+-- Search
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.hlsearch = true
+
+-- Appearance
+vim.opt.termguicolors = true
+vim.opt.signcolumn = "yes"
+vim.opt.cursorline = true
+vim.opt.scrolloff = 8
+vim.opt.wrap = false
+vim.opt.textwidth = 0
+vim.opt.laststatus = 3
+
+-- Splits
+vim.opt.splitbelow = true
+vim.opt.splitright = true
+
+-- Files
+vim.opt.swapfile = false
+vim.opt.undofile = true
+
+-- Mouse
+vim.opt.mouse = "a"
+
+-- Spell
+vim.opt.spell = false
+
+-- Clipboard
+vim.opt.clipboard = "unnamedplus"
+
+-- Timing
+vim.opt.updatetime = 250
+vim.opt.timeoutlen = 300
+
+--------------------------------------------------------------------------------
+-- Plugins
+--------------------------------------------------------------------------------
+local indent_exclude_filetypes = {
+  "Trouble",
+  "alpha",
+  "dashboard",
+  "fzf",
+  "help",
+  "lazy",
+  "mason",
+  "NvimTree",
+  "notify",
+  "toggleterm",
+  "trouble",
+}
+
+require("lazy").setup({
+  -- Color scheme
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    lazy = false,
+    priority = 1000,
+    opts = {
+      flavour = "mocha",
+      integrations = {
+        treesitter = true,
+        gitsigns = true,
+        nvimtree = true,
+        indent_blankline = { enabled = true },
+        mini = { enabled = true, indentscope_color = "surface2" },
+        native_lsp = { enabled = true },
+        which_key = true,
+      },
+    },
+    config = function(_, opts)
+      require("catppuccin").setup(opts)
+      vim.cmd.colorscheme("catppuccin")
+    end,
+  },
+
+  -- File icons
+  {
+    "nvim-tree/nvim-web-devicons",
+    opts = {},
+  },
+
+  -- Status line
+  {
+    "nvim-lualine/lualine.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = {
+      options = {
+        theme = "catppuccin",
+        globalstatus = true,
+      },
+    },
+  },
+
+  -- Buffer/tab line
+  {
+    "akinsho/bufferline.nvim",
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
+      "catppuccin/nvim",
+      "nvim-mini/mini.bufremove",
+    },
+    opts = {
+      options = {
+        close_command = "lua MiniBufremove.wipeout(%d, false)",
+        right_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
+        middle_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
+        diagnostics = "nvim_lsp",
+        offsets = {
+          { filetype = "NvimTree", text = "File Explorer", highlight = "Directory", separator = true },
+        },
+      },
+    },
+  },
+
+  -- File tree explorer
+  {
+    "nvim-tree/nvim-tree.lua",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      -- Disable netrw
+      vim.g.loaded_netrw = 1
+      vim.g.loaded_netrwPlugin = 1
+
+      require("nvim-tree").setup({
+        sync_root_with_cwd = true,
+        hijack_directories = {
+          enable = false,
+          auto_open = false,
+        },
+        update_focused_file = { enable = true },
+        git = { enable = true },
+        renderer = {
+          icons = { show = { file = true, folder = true, folder_arrow = true, git = true } },
+        },
+      })
+    end,
+  },
+
+  -- Buffer removal preserving window layout
+  {
+    "nvim-mini/mini.bufremove",
+    config = function()
+      require("mini.bufremove").setup()
+    end,
+  },
+
+  -- Fuzzy finder
+  {
+    "ibhagwan/fzf-lua",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = {
+      "default",
+      winopts = { height = 0.85, width = 0.80 },
+    },
+  },
+
+  -- Treesitter (parser installation only; Neovim 0.11 handles highlight/indent natively)
+  {
+    "nvim-treesitter/nvim-treesitter",
+    build = function()
+      require("nvim-treesitter").install({
+        "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml",
+        "markdown", "markdown_inline", "python", "javascript", "typescript",
+        "html", "css", "go", "rust", "c",
+      })
+    end,
+    opts = {},
+  },
+
+  -- Indent guides
+  {
+    "lukas-reineke/indent-blankline.nvim",
+    main = "ibl",
+    opts = {
+      indent = { char = "│" },
+      scope = { enabled = false },
+      exclude = {
+        filetypes = indent_exclude_filetypes,
+      },
+    },
+  },
+
+  -- Active indent scope (VS Code-like current block highlight)
+  {
+    "nvim-mini/mini.indentscope",
+    opts = function()
+      local indentscope = require("mini.indentscope")
+      return {
+        symbol = "│",
+        draw = {
+          delay = 60,
+          animation = indentscope.gen_animation.none(),
+        },
+        options = { try_as_border = true },
+        mappings = {
+          object_scope = "",
+          object_scope_with_border = "",
+          goto_top = "",
+          goto_bottom = "",
+        },
+      }
+    end,
+    init = function()
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = indent_exclude_filetypes,
+        callback = function()
+          vim.b.miniindentscope_disable = true
+        end,
+      })
+    end,
+  },
+
+  -- Git gutter signs
+  {
+    "lewis6991/gitsigns.nvim",
+    opts = {
+      on_attach = function(bufnr)
+        local gs = require("gitsigns")
+        local map = function(mode, l, r, desc)
+          vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
+        end
+        map("n", "]h", gs.next_hunk, "Next hunk")
+        map("n", "[h", gs.prev_hunk, "Previous hunk")
+        map("n", "<leader>ghs", gs.stage_hunk, "Stage hunk")
+        map("n", "<leader>ghr", gs.reset_hunk, "Reset hunk")
+        map("n", "<leader>ghp", gs.preview_hunk, "Preview hunk")
+        map("n", "<leader>ghb", function() gs.blame_line({ full = true }) end, "Blame line")
+      end,
+    },
+  },
+
+  -- LSP: mason + mason-lspconfig + lspconfig
+  {
+    "neovim/nvim-lspconfig",
+    dependencies = {
+      { "williamboman/mason.nvim", opts = {} },
+      {
+        "williamboman/mason-lspconfig.nvim",
+        opts = {
+          ensure_installed = { "lua_ls" },
+          automatic_enable = true,
+        },
+      },
+      "saghen/blink.cmp",
+    },
+    config = function()
+      local capabilities = require("blink.cmp").get_lsp_capabilities()
+
+      -- Apply blink.cmp capabilities to all LSP servers
+      vim.lsp.config("*", { capabilities = capabilities })
+
+      -- lua_ls: configure for Neovim runtime
+      vim.lsp.config("lua_ls", {
+        settings = {
+          Lua = {
+            workspace = {
+              library = vim.api.nvim_get_runtime_file("", true),
+              checkThirdParty = false,
+            },
+          },
+        },
+      })
+    end,
+  },
+
+  -- Autocompletion
+  {
+    "saghen/blink.cmp",
+    version = "*",
+    opts = {
+      keymap = { preset = "default" },
+      appearance = { nerd_font_variant = "mono" },
+      sources = { default = { "lsp", "path", "snippets", "buffer" } },
+    },
+  },
+
+  -- Toggle comments
+  {
+    "numToStr/Comment.nvim",
+    opts = {},
+  },
+
+  -- Auto-close brackets/quotes
+  {
+    "windwp/nvim-autopairs",
+    event = "InsertEnter",
+    opts = { check_ts = true },
+  },
+
+  -- Keybinding discovery popup
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    opts = {
+      spec = {
+        { "<leader>f", group = "find/file" },
+        { "<leader>c", group = "code" },
+        { "<leader>g", group = "git" },
+        { "<leader>b", group = "buffer" },
+        { "<leader>s", group = "search" },
+        { "<leader>u", group = "ui/toggle" },
+        { "<leader>w", group = "window" },
+        { "<leader>q", group = "quit" },
+        { "<leader>gh", group = "hunks" },
+      },
+    },
+  },
+}, {
+  install = {
+    -- Prefer catppuccin during plugin installation when it's available.
+    colorscheme = { "catppuccin", "habamax" },
+  },
+})
+
+--------------------------------------------------------------------------------
+-- Keybindings
+--------------------------------------------------------------------------------
+local map = vim.keymap.set
+
+-- General
+map({ "n", "i" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
+map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
+map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
+
+-- Move lines
+map("n", "<A-j>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
+map("n", "<A-k>", "<cmd>m .-2<cr>==", { desc = "Move line up" })
+map("v", "<A-j>", ":m '>+1<cr>gv=gv", { desc = "Move lines down" })
+map("v", "<A-k>", ":m '<-2<cr>gv=gv", { desc = "Move lines up" })
+
+-- Window navigation
+map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
+map("n", "<C-j>", "<C-w>j", { desc = "Go to lower window" })
+map("n", "<C-k>", "<C-w>k", { desc = "Go to upper window" })
+map("n", "<C-l>", "<C-w>l", { desc = "Go to right window" })
+
+-- Window management
+map("n", "<leader>-", "<cmd>split<cr>", { desc = "Split below" })
+map("n", "<leader>|", "<cmd>vsplit<cr>", { desc = "Split right" })
+map("n", "<leader>wd", "<C-w>c", { desc = "Delete window" })
+
+-- Window resize
+map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Increase window height" })
+map("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "Decrease window height" })
+map("n", "<C-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease window width" })
+map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase window width" })
+
+-- Buffer navigation
+map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
+map("n", "<S-l>", "<cmd>bnext<cr>", { desc = "Next buffer" })
+map("n", "[b", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
+map("n", "]b", "<cmd>bnext<cr>", { desc = "Next buffer" })
+map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
+map("n", "<leader>bd", function() require("mini.bufremove").wipeout(0, false) end, { desc = "Close buffer (keep layout)" })
+map("n", "<leader>bo", "<cmd>%bdelete|edit #|bdelete #<cr>", { desc = "Close other buffers" })
+
+-- File explorer
+map("n", "<leader>e", "<cmd>NvimTreeToggle<cr>", { desc = "Toggle file explorer" })
+
+-- Fuzzy finder (fzf-lua)
+map("n", "<leader><space>", "<cmd>FzfLua files<cr>", { desc = "Find files" })
+map("n", "<leader>ff", "<cmd>FzfLua files<cr>", { desc = "Find files" })
+map("n", "<leader>/", "<cmd>FzfLua live_grep<cr>", { desc = "Live grep" })
+map("n", "<leader>sg", "<cmd>FzfLua live_grep<cr>", { desc = "Live grep" })
+map("n", "<leader>fb", "<cmd>FzfLua buffers<cr>", { desc = "Buffers" })
+map("n", "<leader>fr", "<cmd>FzfLua oldfiles<cr>", { desc = "Recent files" })
+map("n", "<leader>sh", "<cmd>FzfLua helptags<cr>", { desc = "Help pages" })
+map("n", "<leader>sw", "<cmd>FzfLua grep_cword<cr>", { desc = "Grep word under cursor" })
+map("n", "<leader>sd", "<cmd>FzfLua diagnostics_document<cr>", { desc = "Diagnostics" })
+map("n", "<leader>ss", "<cmd>FzfLua lsp_document_symbols<cr>", { desc = "LSP document symbols" })
+
+-- LSP keybindings (buffer-local, set via LspAttach)
+vim.api.nvim_create_autocmd("LspAttach", {
+  group = vim.api.nvim_create_augroup("nvim-ide-lsp-attach", { clear = true }),
+  callback = function(event)
+    local buf = event.buf
+    local lmap = function(mode, l, r, desc)
+      vim.keymap.set(mode, l, r, { buffer = buf, desc = desc })
+    end
+
+    lmap("n", "gd", vim.lsp.buf.definition, "Go to definition")
+    lmap("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
+    lmap("n", "gI", vim.lsp.buf.implementation, "Go to implementation")
+    lmap("n", "gy", vim.lsp.buf.type_definition, "Go to type definition")
+    lmap("n", "gr", "<cmd>FzfLua lsp_references<cr>", "References")
+    lmap("n", "K", vim.lsp.buf.hover, "Hover documentation")
+    lmap("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
+    lmap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
+    lmap("n", "<leader>cd", vim.diagnostic.open_float, "Line diagnostics")
+    lmap("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
+    lmap("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
+    lmap("n", "[e", function() vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR }) end, "Previous error")
+    lmap("n", "]e", function() vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR }) end, "Next error")
+    lmap("n", "[w", function() vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.WARN }) end, "Previous warning")
+    lmap("n", "]w", function() vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.WARN }) end, "Next warning")
+  end,
+})
+
+--------------------------------------------------------------------------------
+-- Autocommands
+--------------------------------------------------------------------------------
+
+-- Highlight on yank
+vim.api.nvim_create_autocmd("TextYankPost", {
+  group = vim.api.nvim_create_augroup("nvim-ide-highlight-yank", { clear = true }),
+  callback = function()
+    vim.highlight.on_yank()
+  end,
+})
+
+-- Restore cursor position
+vim.api.nvim_create_autocmd("BufReadPost", {
+  group = vim.api.nvim_create_augroup("nvim-ide-restore-cursor", { clear = true }),
+  callback = function()
+    local mark = vim.api.nvim_buf_get_mark(0, "\"")
+    local line_count = vim.api.nvim_buf_line_count(0)
+    if mark[1] > 0 and mark[1] <= line_count then
+      pcall(vim.api.nvim_win_set_cursor, 0, mark)
+    end
+  end,
+})
+
+-- Open an IDE-like layout when starting with a directory: tree left + editor right.
+local function open_ide_layout()
+  require("nvim-tree.api").tree.open({ current_window = false })
+  vim.cmd("wincmd p")
+end
+
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = vim.api.nvim_create_augroup("nvim-ide-startup-layout", { clear = true }),
+  callback = function(data)
+    local argc = vim.fn.argc()
+
+    if argc == 0 then
+      open_ide_layout()
+      return
+    end
+
+    if argc ~= 1 or vim.fn.isdirectory(data.file) ~= 1 then
+      return
+    end
+
+    vim.cmd.cd(data.file)
+    vim.cmd.enew()
+    pcall(function()
+      vim.cmd("bwipeout " .. data.buf)
+    end)
+
+    open_ide_layout()
+  end,
+})
