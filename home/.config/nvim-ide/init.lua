@@ -108,6 +108,7 @@ require("lazy").setup({
         indent_blankline = { enabled = true },
         mini = { enabled = true, indentscope_color = "surface2" },
         native_lsp = { enabled = true },
+        navic = { enabled = true },
         which_key = true,
       },
     },
@@ -123,14 +124,59 @@ require("lazy").setup({
     opts = {},
   },
 
+  -- LSP breadcrumb
+  {
+    "SmiteshP/nvim-navic",
+    opts = {
+      lsp = { auto_attach = true },
+      highlight = true,
+      separator = " ",
+    },
+  },
+
+  -- Battery status
+  {
+    "justinhj/battery.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {
+      update_rate_seconds = 30,
+      show_status_when_no_battery = false,
+      show_plugged_icon = true,
+      show_unplugged_icon = true,
+      show_percent = true,
+    },
+  },
+
   -- Status line
   {
     "nvim-lualine/lualine.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
+    dependencies = { "nvim-tree/nvim-web-devicons", "SmiteshP/nvim-navic", "justinhj/battery.nvim" },
     opts = {
       options = {
         theme = "catppuccin",
         globalstatus = true,
+        component_separators = { left = "", right = "" },
+      },
+      sections = {
+        lualine_a = { "mode" },
+        lualine_b = { "branch" },
+        lualine_c = {
+          { "filetype", icon_only = true, padding = { left = 1, right = 0 } },
+          { "filename", path = 1 },
+          {
+            function() return require("nvim-navic").get_location() end,
+            cond = function() return require("nvim-navic").is_available() end,
+          },
+        },
+        lualine_x = { "diagnostics", "diff" },
+        lualine_y = { "location" },
+        lualine_z = {
+          {
+            function() return require("battery").get_status_line() end,
+            padding = { left = 1, right = 0 },
+          },
+          function() return "\xef\x90\xba " .. os.date("%R") end,
+        },
       },
     },
   },
