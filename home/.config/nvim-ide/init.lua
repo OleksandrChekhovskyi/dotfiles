@@ -1,5 +1,9 @@
 -- nvim-ide: standalone Neovim IDE config (NVIM_APPNAME=nvim-ide)
 
+-- nvim-tree recommends disabling netrw at the very start of init.lua.
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 --------------------------------------------------------------------------------
 -- Bootstrap lazy.nvim
 --------------------------------------------------------------------------------
@@ -157,10 +161,6 @@ require("lazy").setup({
     "nvim-tree/nvim-tree.lua",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
-      -- Disable netrw
-      vim.g.loaded_netrw = 1
-      vim.g.loaded_netrwPlugin = 1
-
       require("nvim-tree").setup({
         sync_root_with_cwd = true,
         hijack_directories = {
@@ -199,13 +199,17 @@ require("lazy").setup({
     "nvim-treesitter/nvim-treesitter",
     lazy = false,
     build = ":TSUpdate",
-    config = function()
-      -- install() is async and skips already-installed parsers.
-      require("nvim-treesitter").install({
+    opts = {
+      ensure_installed = {
         "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml",
         "markdown", "markdown_inline", "python", "javascript", "typescript",
         "html", "css", "go", "rust", "c", "cpp",
-      })
+      },
+    },
+    config = function(_, opts)
+      local ts = require("nvim-treesitter")
+      ts.setup()
+      ts.install(opts.ensure_installed)
     end,
   },
 
@@ -275,9 +279,9 @@ require("lazy").setup({
   {
     "neovim/nvim-lspconfig",
     dependencies = {
-      { "williamboman/mason.nvim", opts = {} },
+      { "mason-org/mason.nvim", opts = {} },
       {
-        "williamboman/mason-lspconfig.nvim",
+        "mason-org/mason-lspconfig.nvim",
         opts = {
           ensure_installed = { "lua_ls" },
           automatic_enable = true,
@@ -308,7 +312,7 @@ require("lazy").setup({
   -- Autocompletion
   {
     "saghen/blink.cmp",
-    version = "*",
+    version = "1.*",
     opts = {
       keymap = {
         preset = "default",
