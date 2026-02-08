@@ -27,7 +27,7 @@ vim.g.maplocalleader = "\\"
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4
-vim.opt.expandtab = true
+vim.opt.expandtab = false
 vim.opt.smartindent = true
 
 -- Line numbers
@@ -443,6 +443,20 @@ vim.api.nvim_create_autocmd("LspAttach", {
 --------------------------------------------------------------------------------
 -- Autocommands
 --------------------------------------------------------------------------------
+
+-- C/C++ indentation tweaks for Vim's built-in cindent engine.
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("nvim-ide-cpp-indent", { clear = true }),
+  pattern = { "c", "cpp" },
+  callback = function()
+    -- l1: align braces in "case X: {" blocks with the case label.
+    -- j1: improves indentation for inline lambda/function-style constructs.
+    vim.bo.cinoptions = "l1,j1"
+    -- Reindent on block delimiters/preprocessor/newline/else, but not on ":".
+    -- Omitting ":" avoids extra reindent churn while typing labels/case lines.
+    vim.bo.cinkeys = "0{,0},0),0],0#,!^F,o,O,e"
+  end,
+})
 
 -- Highlight on yank
 vim.api.nvim_create_autocmd("TextYankPost", {
