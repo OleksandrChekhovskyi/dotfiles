@@ -196,14 +196,16 @@ require("lazy").setup({
   -- Treesitter (parser installation only; Neovim 0.11 handles highlight/indent natively)
   {
     "nvim-treesitter/nvim-treesitter",
-    build = function()
+    lazy = false,
+    build = ":TSUpdate",
+    config = function()
+      -- install() is async and skips already-installed parsers.
       require("nvim-treesitter").install({
         "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml",
         "markdown", "markdown_inline", "python", "javascript", "typescript",
-        "html", "css", "go", "rust", "c",
+        "html", "css", "go", "rust", "c", "cpp",
       })
     end,
-    opts = {},
   },
 
   -- Indent guides
