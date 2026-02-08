@@ -309,7 +309,10 @@ require("lazy").setup({
     "saghen/blink.cmp",
     version = "*",
     opts = {
-      keymap = { preset = "default" },
+      keymap = {
+        preset = "default",
+        ["<CR>"] = { "accept", "fallback" },
+      },
       appearance = { nerd_font_variant = "mono" },
       sources = { default = { "lsp", "path", "snippets", "buffer" } },
     },
