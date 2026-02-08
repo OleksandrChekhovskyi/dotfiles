@@ -52,6 +52,11 @@ vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 3
 vim.opt.cmdheight = 0
+vim.opt.showcmd = false
+vim.opt.messagesopt = "wait:1000,history:500"
+vim.opt.shortmess:append("W")
+vim.opt.shortmess:append("I")
+vim.opt.shortmess:append("c")
 
 -- Splits
 vim.opt.splitbelow = true
@@ -403,6 +408,20 @@ require("lazy").setup({
     "windwp/nvim-autopairs",
     event = "InsertEnter",
     opts = { check_ts = true },
+  },
+
+  -- Copy file and line references (useful for sharing exact code locations)
+  {
+    "cajames/copy-reference.nvim",
+    lazy = false,
+    opts = {
+      register = "+",
+      use_git_root = true,
+    },
+    keys = {
+      { "yr", "<cmd>CopyReference file<cr>", mode = { "n", "v" }, desc = "Copy file path" },
+      { "yrr", "<cmd>CopyReference line<cr>", mode = { "n", "v" }, desc = "Copy file:line reference" },
+    },
   },
 
   -- Keybinding discovery popup
