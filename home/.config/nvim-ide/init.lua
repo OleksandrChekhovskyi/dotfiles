@@ -194,7 +194,7 @@ require("lazy").setup({
     },
   },
 
-  -- Treesitter (parser installation only; Neovim 0.11 handles highlight/indent natively)
+  -- Treesitter (parser installation + native TS highlighting)
   {
     "nvim-treesitter/nvim-treesitter",
     lazy = false,
@@ -210,6 +210,16 @@ require("lazy").setup({
       local ts = require("nvim-treesitter")
       ts.setup()
       ts.install(opts.ensure_installed)
+
+      -- Enable Neovim's native Tree-sitter highlighter for buffers with
+      -- available parsers. Keep this resilient for unsupported filetypes.
+      local ts_hl_group = vim.api.nvim_create_augroup("nvim-ide-treesitter-highlight", { clear = true })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = ts_hl_group,
+        callback = function(args)
+          pcall(vim.treesitter.start, args.buf)
+        end,
+      })
     end,
   },
 
