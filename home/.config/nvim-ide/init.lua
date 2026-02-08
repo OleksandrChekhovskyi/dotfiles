@@ -216,7 +216,20 @@ require("lazy").setup({
         update_focused_file = { enable = true },
         git = { enable = true },
         renderer = {
-          icons = { show = { file = true, folder = true, folder_arrow = true, git = true } },
+          icons = {
+            show = { file = true, folder = true, folder_arrow = true, git = true },
+            glyphs = {
+              git = {
+                unstaged  = "\xe2\x97\x8f",  -- filled circle
+                staged    = "\xe2\x9c\x93",  -- check mark
+                unmerged  = "\xe2\x95\x90",  -- double horizontal
+                renamed   = "\xc2\xbb",      -- double right angle
+                untracked = "\xe2\x98\x85",  -- star
+                deleted   = "\xe2\x9c\x98",  -- heavy cross
+                ignored   = "\xe2\x97\x8c",  -- dotted circle
+              },
+            },
+          },
         },
       })
     end,
