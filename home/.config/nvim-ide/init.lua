@@ -96,6 +96,7 @@ require("lazy").setup({
     priority = 1000,
     opts = {
       flavour = "mocha",
+      no_italic = true,
       integrations = {
         treesitter = true,
         gitsigns = true,
