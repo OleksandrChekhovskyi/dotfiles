@@ -76,22 +76,8 @@ vim.opt.updatetime = 250
 vim.opt.timeoutlen = 300
 
 --------------------------------------------------------------------------------
--- Plugins
+-- Diagnostics
 --------------------------------------------------------------------------------
-local indent_exclude_filetypes = {
-  "Trouble",
-  "alpha",
-  "dashboard",
-  "fzf",
-  "help",
-  "lazy",
-  "mason",
-  "neo-tree",
-  "notify",
-  "toggleterm",
-  "trouble",
-}
-
 local diagnostic_icons = {
   Error = "\xef\x81\x97", -- error circle with X
   Warn  = "\xef\x81\xb1", -- warning triangle
@@ -117,6 +103,50 @@ vim.diagnostic.config({
   },
 })
 
+--------------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------------
+local indent_exclude_filetypes = {
+  "Trouble",
+  "alpha",
+  "dashboard",
+  "fzf",
+  "help",
+  "lazy",
+  "mason",
+  "neo-tree",
+  "notify",
+  "toggleterm",
+  "trouble",
+}
+
+--- Check if cursor is inside a comment or string using treesitter highlight captures.
+--- Language-agnostic: capture names (@comment, @string) are standardized across parsers.
+local function in_comment_or_string()
+  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+  -- In insert mode the cursor is between characters; look one column back
+  -- so we check the character we just typed, not the one ahead of it.
+  if vim.api.nvim_get_mode().mode == "i" then
+    col = col - 1
+  end
+  if col < 0 then
+    return false
+  end
+  local ok, captures = pcall(vim.treesitter.get_captures_at_pos, 0, row - 1, col)
+  if not ok or not captures then
+    return false
+  end
+  for _, capture in ipairs(captures) do
+    if capture.capture:find("^comment") or capture.capture:find("^string") then
+      return true
+    end
+  end
+  return false
+end
+
+--------------------------------------------------------------------------------
+-- Plugins
+--------------------------------------------------------------------------------
 require("lazy").setup({
   -- Color scheme
   {
@@ -446,6 +476,17 @@ require("lazy").setup({
         ["<CR>"] = { "accept", "fallback" },
       },
       appearance = { nerd_font_variant = "mono" },
+      completion = {
+        menu = {
+          -- Suppress auto-completion in markdown, comments, strings, and buffers without an LSP.
+          -- Manual trigger (e.g. <C-Space>) still works everywhere.
+          auto_show = function()
+            return vim.bo.filetype ~= "markdown"
+              and #vim.lsp.get_clients({ bufnr = 0 }) > 0
+              and not in_comment_or_string()
+          end,
+        },
+      },
       sources = { default = { "lsp", "path", "snippets", "buffer" } },
     },
   },
