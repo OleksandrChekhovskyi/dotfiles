@@ -1,9 +1,5 @@
 -- nvim-ide: standalone Neovim IDE config (NVIM_APPNAME=nvim-ide)
 
--- nvim-tree recommends disabling netrw at the very start of init.lua.
-vim.g.loaded_netrw = 1
-vim.g.loaded_netrwPlugin = 1
-
 --------------------------------------------------------------------------------
 -- Bootstrap lazy.nvim
 --------------------------------------------------------------------------------
@@ -90,7 +86,7 @@ local indent_exclude_filetypes = {
   "help",
   "lazy",
   "mason",
-  "NvimTree",
+  "neo-tree",
   "notify",
   "toggleterm",
   "trouble",
@@ -113,15 +109,10 @@ require("lazy").setup({
     opts = {
       flavour = "mocha",
       no_italic = true,
-      custom_highlights = function(C)
-        return {
-          NvimTreeIndentMarker = { fg = C.surface1 },
-        }
-      end,
       integrations = {
         treesitter = true,
         gitsigns = true,
-        nvimtree = true,
+        neotree = true,
         indent_blankline = { enabled = true },
         mini = { enabled = true, indentscope_color = "surface2" },
         native_lsp = { enabled = true },
@@ -137,8 +128,14 @@ require("lazy").setup({
 
   -- File icons
   {
-    "nvim-tree/nvim-web-devicons",
+    "nvim-mini/mini.icons",
     opts = {},
+    init = function()
+      package.preload["nvim-web-devicons"] = function()
+        require("mini.icons").mock_nvim_web_devicons()
+        return package.loaded["nvim-web-devicons"]
+      end
+    end,
   },
 
   -- LSP breadcrumb
@@ -167,7 +164,7 @@ require("lazy").setup({
   -- Status line
   {
     "nvim-lualine/lualine.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons", "SmiteshP/nvim-navic", "justinhj/battery.nvim" },
+    dependencies = { "nvim-mini/mini.icons", "SmiteshP/nvim-navic", "justinhj/battery.nvim" },
     opts = {
       options = {
         theme = "catppuccin",
@@ -213,7 +210,7 @@ require("lazy").setup({
   {
     "akinsho/bufferline.nvim",
     dependencies = {
-      "nvim-tree/nvim-web-devicons",
+      "nvim-mini/mini.icons",
       "catppuccin/nvim",
       "nvim-mini/mini.bufremove",
     },
@@ -224,7 +221,7 @@ require("lazy").setup({
         middle_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
         diagnostics = "nvim_lsp",
         offsets = {
-          { filetype = "NvimTree", text = "File Explorer", highlight = "Directory", separator = true },
+          { filetype = "neo-tree", text = "File Explorer", highlight = "Directory", separator = true },
         },
       },
     },
@@ -232,55 +229,32 @@ require("lazy").setup({
 
   -- File tree explorer
   {
-    "nvim-tree/nvim-tree.lua",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      require("nvim-tree").setup({
-        sync_root_with_cwd = true,
-        hijack_directories = {
-          enable = false,
-          auto_open = false,
-        },
-        update_focused_file = { enable = true },
-        git = {
-          enable = true,
-          show_on_dirs = true,
-          show_on_open_dirs = false,
-        },
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-mini/mini.icons",
+    },
+    opts = {
+      sources = { "filesystem", "buffers", "git_status" },
+      open_files_do_not_replace_types = { "terminal", "Trouble", "trouble", "qf", "edgy" },
+      filesystem = {
+        bind_to_cwd = false,
+        follow_current_file = { enabled = true },
+        use_libuv_file_watcher = true,
+      },
+      default_component_configs = {
         diagnostics = {
-          enable = true,
-          show_on_dirs = true,
-          show_on_open_dirs = false,
-          icons = {
+          symbols = {
             hint = diagnostic_icons.Hint,
             info = diagnostic_icons.Info,
-            warning = diagnostic_icons.Warn,
+            warn = diagnostic_icons.Warn,
             error = diagnostic_icons.Error,
           },
         },
-        renderer = {
-          indent_markers = {
-            enable = true,
-          },
-          icons = {
-            git_placement = "right_align",
-            diagnostics_placement = "right_align",
-            show = { file = true, folder = true, folder_arrow = true, git = true, diagnostics = true },
-            glyphs = {
-              git = {
-                unstaged  = "\xe2\x97\x8f",  -- filled circle
-                staged    = "\xe2\x9c\x93",  -- check mark
-                unmerged  = "\xe2\x95\x90",  -- double horizontal
-                renamed   = "\xc2\xbb",      -- double right angle
-                untracked = "\xe2\x98\x85",  -- star
-                deleted   = "\xe2\x9c\x98",  -- heavy cross
-                ignored   = "\xe2\x97\x8c",  -- dotted circle
-              },
-            },
-          },
-        },
-      })
-    end,
+      },
+    },
   },
 
   -- Buffer removal preserving window layout
@@ -294,7 +268,7 @@ require("lazy").setup({
   -- Fuzzy finder
   {
     "ibhagwan/fzf-lua",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
+    dependencies = { "nvim-mini/mini.icons" },
     opts = {
       "default",
       winopts = { height = 0.85, width = 0.80 },
@@ -540,7 +514,13 @@ map("n", "<leader>bd", function() require("mini.bufremove").wipeout(0, false) en
 map("n", "<leader>bo", "<cmd>%bdelete|edit #|bdelete #<cr>", { desc = "Close other buffers" })
 
 -- File explorer
-map("n", "<leader>e", "<cmd>NvimTreeToggle<cr>", { desc = "Toggle file explorer" })
+map("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "Toggle file explorer" })
+map("n", "<leader>ge", function()
+  require("neo-tree.command").execute({ source = "git_status", toggle = true })
+end, { desc = "Git explorer" })
+map("n", "<leader>be", function()
+  require("neo-tree.command").execute({ source = "buffers", toggle = true })
+end, { desc = "Buffer explorer" })
 
 -- Fuzzy finder (fzf-lua)
 map("n", "<leader><space>", "<cmd>FzfLua files<cr>", { desc = "Find files" })
@@ -621,7 +601,7 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 
 -- Open an IDE-like layout when starting with a directory: tree left + editor right.
 local function open_ide_layout()
-  require("nvim-tree.api").tree.open({ current_window = false })
+  require("neo-tree.command").execute({ action = "show", dir = vim.uv.cwd() })
   vim.cmd("wincmd p")
 end
 
