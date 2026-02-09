@@ -113,6 +113,11 @@ require("lazy").setup({
     opts = {
       flavour = "mocha",
       no_italic = true,
+      custom_highlights = function(C)
+        return {
+          NvimTreeIndentMarker = { fg = C.surface1 },
+        }
+      end,
       integrations = {
         treesitter = true,
         gitsigns = true,
@@ -237,10 +242,30 @@ require("lazy").setup({
           auto_open = false,
         },
         update_focused_file = { enable = true },
-        git = { enable = true },
-        renderer = {
+        git = {
+          enable = true,
+          show_on_dirs = true,
+          show_on_open_dirs = false,
+        },
+        diagnostics = {
+          enable = true,
+          show_on_dirs = true,
+          show_on_open_dirs = false,
           icons = {
-            show = { file = true, folder = true, folder_arrow = true, git = true },
+            hint = diagnostic_icons.Hint,
+            info = diagnostic_icons.Info,
+            warning = diagnostic_icons.Warn,
+            error = diagnostic_icons.Error,
+          },
+        },
+        renderer = {
+          indent_markers = {
+            enable = true,
+          },
+          icons = {
+            git_placement = "right_align",
+            diagnostics_placement = "right_align",
+            show = { file = true, folder = true, folder_arrow = true, git = true, diagnostics = true },
             glyphs = {
               git = {
                 unstaged  = "\xe2\x97\x8f",  -- filled circle
