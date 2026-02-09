@@ -391,6 +391,19 @@ require("lazy").setup({
       -- Apply blink.cmp capabilities to all LSP servers
       vim.lsp.config("*", { capabilities = capabilities })
 
+      -- vtsls: prefer tsconfig.json so monorepo roots resolve correctly
+      vim.lsp.config("vtsls", {
+        root_dir = function(bufnr, on_dir)
+          local util = require("lspconfig.util")
+          local ts_root = util.root_pattern("tsconfig.json")
+          local fallback_root = util.root_pattern("package.json", "jsconfig.json", ".git")
+
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          local root = ts_root(fname) or fallback_root(fname)
+          return root and on_dir(root)
+        end,
+      })
+
       -- lua_ls: configure for Neovim runtime
       vim.lsp.config("lua_ls", {
         settings = {
