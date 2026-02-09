@@ -99,6 +99,16 @@ local diagnostic_icons = {
   Info  = "\xef\x81\x9a", -- info circle
 }
 
+vim.diagnostic.config({
+  virtual_text = {
+    prefix = function(diagnostic)
+      local icons = { diagnostic_icons.Error, diagnostic_icons.Warn, diagnostic_icons.Info, diagnostic_icons.Hint }
+      return icons[diagnostic.severity] or diagnostic_icons.Info
+    end,
+    spacing = 1,
+  },
+})
+
 require("lazy").setup({
   -- Color scheme
   {
