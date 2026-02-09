@@ -266,7 +266,7 @@ require("lazy").setup({
     opts = {
       ensure_installed = {
         "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml",
-        "markdown", "markdown_inline", "python", "javascript", "typescript",
+        "markdown", "markdown_inline", "python", "javascript", "typescript", "tsx",
         "html", "css", "go", "rust", "c", "cpp",
       },
     },
