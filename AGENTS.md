@@ -17,3 +17,4 @@ Personal dotfiles managed via symlinks.
 
 - Keep machine-specific paths and secrets in `~/.bashrc.local`, never in tracked files.
 - `install.sh` is idempotent — re-running it skips already-correct symlinks.
+- For `nvim-ide` changes, do not run Neovim in sandbox to validate setup (it commonly fails there); validate Lua syntax and ask the user to verify behavior locally.
