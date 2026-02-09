@@ -477,6 +477,9 @@ require("lazy").setup({
       },
       appearance = { nerd_font_variant = "mono" },
       completion = {
+        accept = {
+          auto_brackets = { enabled = true },
+        },
         menu = {
           -- Suppress auto-completion in markdown, comments, strings, and buffers without an LSP.
           -- Manual trigger (e.g. <C-Space>) still works everywhere.
@@ -485,6 +488,10 @@ require("lazy").setup({
               and #vim.lsp.get_clients({ bufnr = 0 }) > 0
               and not in_comment_or_string()
           end,
+        },
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 200,
         },
       },
       sources = { default = { "lsp", "path", "snippets", "buffer" } },
