@@ -96,6 +96,13 @@ local indent_exclude_filetypes = {
   "trouble",
 }
 
+local diagnostic_icons = {
+  Error = "\xef\x81\x97", -- error circle with X
+  Warn  = "\xef\x81\xb1", -- warning triangle
+  Hint  = "\xef\x83\xab", -- lightbulb hint
+  Info  = "\xef\x81\x9a", -- info circle
+}
+
 require("lazy").setup({
   -- Color scheme
   {
@@ -173,7 +180,18 @@ require("lazy").setup({
             cond = function() return require("nvim-navic").is_available() end,
           },
         },
-        lualine_x = { "diagnostics", "diff" },
+        lualine_x = {
+          {
+            "diagnostics",
+            symbols = {
+              error = diagnostic_icons.Error .. " ",
+              warn  = diagnostic_icons.Warn .. " ",
+              hint  = diagnostic_icons.Hint .. " ",
+              info  = diagnostic_icons.Info .. " ",
+            },
+          },
+          "diff",
+        },
         lualine_y = { "location" },
         lualine_z = {
           {
@@ -365,6 +383,11 @@ require("lazy").setup({
     },
     config = function()
       local capabilities = require("blink.cmp").get_lsp_capabilities()
+
+      for type, icon in pairs(diagnostic_icons) do
+        local name = "DiagnosticSign" .. type
+        vim.fn.sign_define(name, { text = icon, texthl = name, numhl = "" })
+      end
 
       -- Apply blink.cmp capabilities to all LSP servers
       vim.lsp.config("*", { capabilities = capabilities })
