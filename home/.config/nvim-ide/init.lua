@@ -325,6 +325,9 @@ require("lazy").setup({
     opts = {
       "default",
       winopts = { height = 0.85, width = 0.80 },
+      files = {
+        cwd_prompt = false,
+      },
     },
   },
 
