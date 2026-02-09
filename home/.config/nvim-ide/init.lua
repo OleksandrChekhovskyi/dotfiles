@@ -107,6 +107,14 @@ vim.diagnostic.config({
     end,
     spacing = 1,
   },
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = diagnostic_icons.Error,
+      [vim.diagnostic.severity.WARN]  = diagnostic_icons.Warn,
+      [vim.diagnostic.severity.HINT]  = diagnostic_icons.Hint,
+      [vim.diagnostic.severity.INFO]  = diagnostic_icons.Info,
+    },
+  },
 })
 
 require("lazy").setup({
@@ -398,11 +406,6 @@ require("lazy").setup({
     config = function()
       local capabilities = require("blink.cmp").get_lsp_capabilities()
 
-      for type, icon in pairs(diagnostic_icons) do
-        local name = "DiagnosticSign" .. type
-        vim.fn.sign_define(name, { text = icon, texthl = name, numhl = "" })
-      end
-
       -- Apply blink.cmp capabilities to all LSP servers
       vim.lsp.config("*", { capabilities = capabilities })
 
@@ -479,6 +482,7 @@ require("lazy").setup({
     "folke/which-key.nvim",
     event = "VeryLazy",
     opts = {
+      preset = "helix",
       spec = {
         { "<leader>f", group = "find/file" },
         { "<leader>c", group = "code" },
@@ -486,9 +490,13 @@ require("lazy").setup({
         { "<leader>b", group = "buffer" },
         { "<leader>s", group = "search" },
         { "<leader>u", group = "ui/toggle" },
-        { "<leader>w", group = "window" },
+        { "<leader>w", group = "window", proxy = "<c-w>" },
         { "<leader>q", group = "quit" },
         { "<leader>gh", group = "hunks" },
+        { "[", group = "prev" },
+        { "]", group = "next" },
+        { "g", group = "goto" },
+        { "z", group = "fold" },
       },
     },
   },
