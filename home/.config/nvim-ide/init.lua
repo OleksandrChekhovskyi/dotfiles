@@ -298,6 +298,9 @@ require("lazy").setup({
         },
       },
       default_component_configs = {
+        symlink_target = {
+          enabled = true,
+        },
         diagnostics = {
           symbols = {
             hint = diagnostic_icons.Hint,
