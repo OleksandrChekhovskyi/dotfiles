@@ -661,6 +661,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("nvim-ide-lsp-attach", { clear = true }),
   callback = function(event)
     local buf = event.buf
+    local client = vim.lsp.get_client_by_id(event.data.client_id)
     local lmap = function(mode, l, r, desc)
       vim.keymap.set(mode, l, r, { buffer = buf, desc = desc })
     end
@@ -673,6 +674,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
     lmap("n", "K", vim.lsp.buf.hover, "Hover documentation")
     lmap("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
     lmap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
+    if client and client.name == "clangd" then
+      lmap("n", "<leader>ch", "<cmd>LspClangdSwitchSourceHeader<cr>", "Switch Source/Header (C/C++)")
+    end
     lmap("n", "<leader>cd", vim.diagnostic.open_float, "Line diagnostics")
     lmap("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
     lmap("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
