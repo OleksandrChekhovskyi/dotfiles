@@ -655,6 +655,7 @@ map("n", "<leader>sh", "<cmd>FzfLua helptags<cr>", { desc = "Help pages" })
 map("n", "<leader>sw", "<cmd>FzfLua grep_cword<cr>", { desc = "Grep word under cursor" })
 map("n", "<leader>sd", "<cmd>FzfLua diagnostics_document<cr>", { desc = "Diagnostics" })
 map("n", "<leader>ss", "<cmd>FzfLua lsp_document_symbols<cr>", { desc = "LSP document symbols" })
+map("n", "<leader>sS", "<cmd>FzfLua lsp_live_workspace_symbols<cr>", { desc = "LSP workspace symbols (live)" })
 
 -- LSP keybindings (buffer-local, set via LspAttach)
 vim.api.nvim_create_autocmd("LspAttach", {
