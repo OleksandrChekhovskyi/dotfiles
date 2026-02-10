@@ -47,12 +47,6 @@ vim.opt.scrolloff = 8
 vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 3
-vim.opt.cmdheight = 0
-vim.opt.showcmd = false
-vim.opt.messagesopt = "wait:1000,history:500"
-vim.opt.shortmess:append("W")
-vim.opt.shortmess:append("I")
-vim.opt.shortmess:append("c")
 
 -- Splits
 vim.opt.splitbelow = true
@@ -554,6 +548,41 @@ require("lazy").setup({
       },
     },
   },
+
+  -- Message and cmdline UI with persistent history
+  {
+    "folke/noice.nvim",
+    event = "VeryLazy",
+    dependencies = {
+      "MunifTanjim/nui.nvim",
+      "rcarriga/nvim-notify",
+    },
+    opts = {
+      lsp = {
+        progress = { enabled = false },
+      },
+      messages = {
+        view = "mini",
+      },
+      views = {
+        cmdline_popup = {
+          position = {
+            row = 5,
+            col = "50%",
+          },
+        },
+      },
+    },
+    config = function(_, opts)
+      require("notify").setup({
+        timeout = 1500,
+        render = "minimal",
+        stages = "static",
+      })
+      vim.notify = require("notify")
+      require("noice").setup(opts)
+    end,
+  },
 }, {
   install = {
     -- Prefer catppuccin during plugin installation when it's available.
@@ -570,6 +599,7 @@ local map = vim.keymap.set
 map({ "n", "i" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
+map("n", "<leader>sm", "<cmd>Noice history<cr>", { desc = "Message history" })
 
 -- Move lines
 map("n", "<A-j>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
