@@ -295,6 +295,12 @@ require("lazy").setup({
         symlink_target = {
           enabled = true,
         },
+        git_status = {
+          symbols = {
+            staged = "",
+            unstaged = "",
+          },
+        },
         diagnostics = {
           symbols = {
             hint = diagnostic_icons.Hint,
