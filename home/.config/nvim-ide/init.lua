@@ -112,6 +112,7 @@ local indent_exclude_filetypes = {
   "notify",
   "toggleterm",
   "trouble",
+  "render-markdown",
 }
 
 --- Check if cursor is inside a comment or string using treesitter highlight captures.
@@ -543,6 +544,25 @@ require("lazy").setup({
     },
   },
 
+  -- Markdown rendering (on-demand)
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    cmd = { "RenderMarkdown" },
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "nvim-mini/mini.icons",
+    },
+    opts = {
+      enabled = false,
+      code = { sign = false, width = "block", right_pad = 1 },
+      render_modes = true,
+      anti_conceal = { enabled = false },
+    },
+    keys = {
+      { "<leader>um", "<cmd>RenderMarkdown toggle<cr>", desc = "Toggle markdown render" },
+    },
+  },
+
   -- Toggle comments
   {
     "numToStr/Comment.nvim",
@@ -645,6 +665,7 @@ map({ "n", "i" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 map("n", "<leader>sm", "<cmd>Noice history<cr>", { desc = "Message history" })
+map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
 
 -- Move lines
 map("n", "<A-j>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
