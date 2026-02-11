@@ -151,8 +151,16 @@ require("lazy").setup({
     opts = {
       flavour = "mocha",
       no_italic = true,
+      custom_highlights = function(colors)
+        return {
+          Folded = { bg = colors.surface0, fg = colors.overlay0 },
+          DiffChange = { bg = "#3a3529" },
+          DiffText = { bg = "#4d4632" },
+        }
+      end,
       integrations = {
         treesitter = true,
+        diffview = true,
         gitsigns = true,
         neotree = true,
         indent_blankline = { enabled = true },
@@ -404,6 +412,37 @@ require("lazy").setup({
         end,
       })
     end,
+  },
+
+  -- Git diff viewer
+  {
+    "sindrets/diffview.nvim",
+    dependencies = { "nvim-mini/mini.icons" },
+    opts = {
+      enhanced_diff_hl = true,
+      hooks = {
+        diff_buf_read = function(bufnr)
+          vim.bo[bufnr].modifiable = false
+        end,
+        diff_buf_win_enter = function(_, winid)
+          vim.wo[winid].fillchars = "diff:\xc2\xb7,fold: "
+        end,
+      },
+      keymaps = {
+        view = {
+          { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
+          { "n", "]h", "]c", { desc = "Next hunk" } },
+          { "n", "[h", "[c", { desc = "Previous hunk" } },
+        },
+        file_panel         = { { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } } },
+        file_history_panel = { { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } } },
+      },
+    },
+    keys = {
+      { "<leader>gd", "<cmd>DiffviewOpen<cr>", desc = "Diff view (index)" },
+      { "<leader>gf", "<cmd>DiffviewFileHistory %<cr>", desc = "File history (current)" },
+      { "<leader>gF", "<cmd>DiffviewFileHistory<cr>", desc = "File history (repo)" },
+    },
   },
 
   -- Git gutter signs
