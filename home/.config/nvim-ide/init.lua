@@ -422,6 +422,9 @@ require("lazy").setup({
     dependencies = { "nvim-mini/mini.icons" },
     opts = {
       enhanced_diff_hl = true,
+      file_panel = {
+        win_config = { width = 40 },
+      },
       hooks = {
         diff_buf_read = function(bufnr)
           local name = vim.api.nvim_buf_get_name(bufnr)
