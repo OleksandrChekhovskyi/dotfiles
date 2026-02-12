@@ -797,6 +797,27 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- Refresh neo-tree git status after commits / external changes.
+-- Neo-tree only subscribes to FugitiveChanged natively; gitsigns fires
+-- GitSignsUpdate on HEAD/status changes (e.g. commits), GitSignsChanged on
+-- stage/unstage, and FocusGained covers git changes made outside Neovim.
+local neotree_git_refresh = vim.api.nvim_create_augroup("nvim-ide-neotree-git-refresh", { clear = true })
+local function fire_neotree_git_event()
+  local ok, events = pcall(require, "neo-tree.events")
+  if ok then
+    events.fire_event(events.GIT_EVENT)
+  end
+end
+vim.api.nvim_create_autocmd("User", {
+  group = neotree_git_refresh,
+  pattern = { "GitSignsUpdate", "GitSignsChanged" },
+  callback = fire_neotree_git_event,
+})
+vim.api.nvim_create_autocmd("FocusGained", {
+  group = neotree_git_refresh,
+  callback = fire_neotree_git_event,
+})
+
 -- Highlight on yank
 vim.api.nvim_create_autocmd("TextYankPost", {
   group = vim.api.nvim_create_augroup("nvim-ide-highlight-yank", { clear = true }),
