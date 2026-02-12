@@ -615,6 +615,7 @@ require("lazy").setup({
         { "<leader>b", group = "buffer" },
         { "<leader>s", group = "search" },
         { "<leader>u", group = "ui/toggle" },
+        { "<leader>x", group = "diagnostics/quickfix" },
         { "<leader>w", group = "window", proxy = "<c-w>" },
         { "<leader>q", group = "quit" },
         { "<leader>gh", group = "hunks" },
@@ -678,6 +679,9 @@ map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 map("n", "<leader>sm", "<cmd>Noice history<cr>", { desc = "Message history" })
 map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
+
+-- Diagnostics to quickfix
+map("n", "<leader>xd", vim.diagnostic.setqflist, { desc = "Diagnostics to quickfix" })
 
 -- Move lines
 map("n", "<A-j>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
@@ -781,6 +785,15 @@ vim.api.nvim_create_autocmd("FileType", {
     -- Reindent on block delimiters/preprocessor/newline/else, but not on ":".
     -- Omitting ":" avoids extra reindent churn while typing labels/case lines.
     vim.bo.cinkeys = "0{,0},0),0],0#,!^F,o,O,e"
+  end,
+})
+
+-- Close quickfix / loclist with q
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("nvim-ide-quickfix-close", { clear = true }),
+  pattern = "qf",
+  callback = function(event)
+    vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = event.buf, silent = true })
   end,
 })
 
