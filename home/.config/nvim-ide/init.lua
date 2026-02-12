@@ -273,6 +273,7 @@ require("lazy").setup({
         diagnostics = "nvim_lsp",
         offsets = {
           { filetype = "neo-tree", text = "File Explorer", highlight = "Directory", separator = true },
+          { filetype = "DiffviewFiles", text = "Diffview", highlight = "Directory", separator = true },
         },
       },
     },
