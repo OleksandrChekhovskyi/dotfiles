@@ -439,6 +439,10 @@ require("lazy").setup({
           { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
           { "n", "]h", "]c", { desc = "Next hunk" } },
           { "n", "[h", "[c", { desc = "Previous hunk" } },
+          -- Override diffview's compat fold wrappers (desc="diffview_ignore")
+          -- with proper descriptions for which-key.
+          { "n", "za", "za", { desc = "Toggle fold" } },
+          { "n", "zi", "zi", { desc = "Toggle foldenable" } },
         },
         file_panel         = { { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } } },
         file_history_panel = { { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } } },
