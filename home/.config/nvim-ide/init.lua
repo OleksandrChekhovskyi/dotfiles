@@ -429,6 +429,7 @@ require("lazy").setup({
           end
         end,
         diff_buf_win_enter = function(_, winid)
+          vim.wo[winid].cursorlineopt = "number"
           vim.wo[winid].fillchars = "diff:\xc2\xb7,fold: "
         end,
       },
