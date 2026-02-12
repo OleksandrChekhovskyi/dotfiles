@@ -157,6 +157,7 @@ require("lazy").setup({
           Folded = { bg = colors.surface0, fg = colors.overlay0 },
           DiffChange = { bg = "#3a3529" },
           DiffText = { bg = "#4d4632" },
+          YankHighlight = { bg = colors.surface2 },
         }
       end,
       integrations = {
@@ -822,7 +823,7 @@ vim.api.nvim_create_autocmd("FocusGained", {
 vim.api.nvim_create_autocmd("TextYankPost", {
   group = vim.api.nvim_create_augroup("nvim-ide-highlight-yank", { clear = true }),
   callback = function()
-    vim.highlight.on_yank()
+    vim.highlight.on_yank({ higroup = "YankHighlight" })
   end,
 })
 
