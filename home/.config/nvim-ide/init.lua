@@ -423,7 +423,10 @@ require("lazy").setup({
       enhanced_diff_hl = true,
       hooks = {
         diff_buf_read = function(bufnr)
-          vim.bo[bufnr].modifiable = false
+          local name = vim.api.nvim_buf_get_name(bufnr)
+          if name:find("^diffview://") then
+            vim.bo[bufnr].modifiable = false
+          end
         end,
         diff_buf_win_enter = function(_, winid)
           vim.wo[winid].fillchars = "diff:\xc2\xb7,fold: "
