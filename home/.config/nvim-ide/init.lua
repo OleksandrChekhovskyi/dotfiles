@@ -69,6 +69,10 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.updatetime = 250
 vim.opt.timeoutlen = 300
 
+-- Keep :make exit status reliable for notifications/quickfix logic.
+-- Default Unix shellpipe uses `tee`, which can mask the compiler's exit code.
+vim.opt.shellpipe = "> %s 2>&1"
+
 --------------------------------------------------------------------------------
 -- Diagnostics
 --------------------------------------------------------------------------------
@@ -824,17 +828,33 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Show notification and auto-open quickfix after :make.
 vim.api.nvim_create_autocmd("QuickFixCmdPost", {
   group = vim.api.nvim_create_augroup("nvim-ide-make-notify", { clear = true }),
-  pattern = { "make", "lmake" },
+  pattern = "make",
   callback = function()
-    local qflist = vim.fn.getqflist()
-    local valid = vim.tbl_filter(function(e) return e.valid == 1 end, qflist)
-    if #valid == 0 then
+    local list = vim.fn.getqflist()
+    local valid = vim.tbl_filter(function(e) return e.valid == 1 end, list)
+    local failed = vim.v.shell_error ~= 0
+
+    if not failed and #valid == 0 then
       vim.notify("make: no issues", vim.log.levels.INFO)
+      return
+    end
+
+    local msg
+    local level
+    if failed then
+      level = vim.log.levels.ERROR
+      if #valid > 0 then
+        msg = string.format("make failed: %d issue(s)", #valid)
+      else
+        msg = "make failed"
+      end
     else
-      vim.notify(
-        string.format("make: %d issue(s)", #valid),
-        vim.log.levels.WARN
-      )
+      level = vim.log.levels.WARN
+      msg = string.format("make: %d issue(s)", #valid)
+    end
+
+    vim.notify(msg, level)
+    if #list > 0 then
       vim.cmd("botright copen")
     end
   end,
