@@ -431,6 +431,10 @@ require("lazy").setup({
           local name = vim.api.nvim_buf_get_name(bufnr)
           if name:find("^diffview://") then
             vim.bo[bufnr].modifiable = false
+            -- Synthetic diffview buffers don't have gitsigns attached.
+            -- Provide ]h/[h there without touching real file buffers.
+            vim.keymap.set("n", "]h", "]c", { buffer = bufnr, desc = "Next hunk" })
+            vim.keymap.set("n", "[h", "[c", { buffer = bufnr, desc = "Previous hunk" })
           end
         end,
         diff_buf_win_enter = function(_, winid)
@@ -441,8 +445,6 @@ require("lazy").setup({
       keymaps = {
         view = {
           { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
-          { "n", "]h", "]c", { desc = "Next hunk" } },
-          { "n", "[h", "[c", { desc = "Previous hunk" } },
           -- Override diffview's compat fold wrappers (desc="diffview_ignore")
           -- with proper descriptions for which-key.
           { "n", "za", "za", { desc = "Toggle fold" } },
