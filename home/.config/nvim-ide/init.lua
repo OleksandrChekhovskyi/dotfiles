@@ -426,6 +426,7 @@ require("lazy").setup({
     dependencies = { "nvim-mini/mini.icons" },
     opts = {
       enhanced_diff_hl = true,
+      show_help_hints = false,
       file_panel = {
         win_config = { width = 40 },
       },
