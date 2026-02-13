@@ -272,6 +272,9 @@ require("lazy").setup({
         right_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
         middle_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
         diagnostics = "nvim_lsp",
+        custom_filter = function(bufnr)
+          return vim.bo[bufnr].buftype ~= "quickfix"
+        end,
         offsets = {
           { filetype = "neo-tree", text = "File Explorer", highlight = "Directory", separator = true },
           { filetype = "DiffviewFiles", text = "Diffview", highlight = "Directory", separator = true },
@@ -683,8 +686,18 @@ map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 map("n", "<leader>sm", "<cmd>Noice history<cr>", { desc = "Message history" })
 map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
 
--- Diagnostics to quickfix
+-- Diagnostics / quickfix
 map("n", "<leader>xd", vim.diagnostic.setqflist, { desc = "Diagnostics to quickfix" })
+map("n", "<leader>xq", function()
+  local wins = vim.fn.getwininfo()
+  for _, win in ipairs(wins) do
+    if win.quickfix == 1 and win.loclist == 0 then
+      vim.cmd("cclose")
+      return
+    end
+  end
+  vim.cmd("botright copen")
+end, { desc = "Toggle quickfix list" })
 
 -- Move lines
 map("n", "<A-j>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
@@ -804,6 +817,25 @@ vim.api.nvim_create_autocmd("FileType", {
   pattern = "qf",
   callback = function(event)
     vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = event.buf, silent = true })
+  end,
+})
+
+-- Show notification and auto-open quickfix after :make.
+vim.api.nvim_create_autocmd("QuickFixCmdPost", {
+  group = vim.api.nvim_create_augroup("nvim-ide-make-notify", { clear = true }),
+  pattern = { "make", "lmake" },
+  callback = function()
+    local qflist = vim.fn.getqflist()
+    local valid = vim.tbl_filter(function(e) return e.valid == 1 end, qflist)
+    if #valid == 0 then
+      vim.notify("make: no issues", vim.log.levels.INFO)
+    else
+      vim.notify(
+        string.format("make: %d issue(s)", #valid),
+        vim.log.levels.WARN
+      )
+      vim.cmd("botright copen")
+    end
   end,
 })
 
