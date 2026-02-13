@@ -720,6 +720,13 @@ map("n", "<leader>br", "<cmd>BufferLineCloseRight<cr>", { desc = "Close buffers 
 
 -- File explorer
 map("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "Toggle file explorer" })
+map("n", "<leader>o", function()
+  if vim.bo.filetype == "neo-tree" then
+    vim.cmd("wincmd p")
+    return
+  end
+  vim.cmd("Neotree focus")
+end, { desc = "Toggle file explorer focus" })
 map("n", "<leader>ge", function()
   require("neo-tree.command").execute({ source = "git_status", toggle = true })
 end, { desc = "Git explorer" })
