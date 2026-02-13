@@ -273,7 +273,7 @@ require("lazy").setup({
         middle_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
         diagnostics = "nvim_lsp",
         custom_filter = function(bufnr)
-          return vim.bo[bufnr].buftype ~= "quickfix"
+          return vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == ""
         end,
         offsets = {
           { filetype = "neo-tree", text = "File Explorer", highlight = "Directory", separator = true },
