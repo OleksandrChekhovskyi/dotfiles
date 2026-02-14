@@ -344,6 +344,78 @@ require("lazy").setup({
     },
   },
 
+  -- Integrated terminals
+  {
+    "akinsho/toggleterm.nvim",
+    version = "*",
+    cmd = {
+      "TermGeneral",
+      "TermSide",
+      "TermClaude",
+      "TermCodex",
+      "TermOpenCode",
+    },
+    keys = {
+      { "<leader>tt", "<cmd>TermGeneral<cr>", desc = "Terminal: general (bottom)" },
+      { "<leader>ts", "<cmd>TermSide<cr>", desc = "Terminal: general (side)" },
+      { "<leader>tc", "<cmd>TermClaude<cr>", desc = "Terminal: Claude Code (side)" },
+      { "<leader>tx", "<cmd>TermCodex<cr>", desc = "Terminal: Codex (side)" },
+      { "<leader>to", "<cmd>TermOpenCode<cr>", desc = "Terminal: OpenCode (side)" },
+    },
+    opts = {
+      start_in_insert = true,
+      persist_mode = false,
+    },
+    config = function(_, opts)
+      require("toggleterm").setup(opts)
+      local Terminal = require("toggleterm.terminal").Terminal
+
+      local bottom_size = function()
+        return 20
+      end
+
+      local side_size = function()
+        return math.max(50, math.floor(vim.o.columns * 0.33))
+      end
+
+      local no_appname = "env -u NVIM_APPNAME "
+      local shell = os.getenv("SHELL") or "bash"
+
+      local terms = {
+        general  = Terminal:new({ cmd = no_appname .. shell,      direction = "horizontal" }),
+        side     = Terminal:new({ cmd = no_appname .. shell,      direction = "vertical"   }),
+        claude   = Terminal:new({ cmd = no_appname .. "claude",   direction = "vertical"   }),
+        codex    = Terminal:new({ cmd = no_appname .. "codex",    direction = "vertical"   }),
+        opencode = Terminal:new({ cmd = no_appname .. "opencode", direction = "vertical"   }),
+      }
+
+      local function close_terms(except_name)
+        for name, term in pairs(terms) do
+          if name ~= except_name and term:is_open() then
+            term:close()
+          end
+        end
+      end
+
+      local function toggle_term(name, size_fn)
+        close_terms(name)
+        local size = size_fn and size_fn() or nil
+        terms[name]:toggle(size)
+      end
+
+      local function user_command(name, rhs, desc)
+        pcall(vim.api.nvim_del_user_command, name)
+        vim.api.nvim_create_user_command(name, rhs, { desc = desc })
+      end
+
+      user_command("TermGeneral",  function() toggle_term("general", bottom_size) end, "Toggle bottom terminal")
+      user_command("TermSide",     function() toggle_term("side", side_size) end, "Toggle general side terminal")
+      user_command("TermClaude",   function() toggle_term("claude", side_size) end, "Toggle Claude Code side terminal")
+      user_command("TermCodex",    function() toggle_term("codex", side_size) end, "Toggle Codex side terminal")
+      user_command("TermOpenCode", function() toggle_term("opencode", side_size) end, "Toggle OpenCode side terminal")
+    end,
+  },
+
   -- Buffer removal preserving window layout
   {
     "nvim-mini/mini.bufremove",
@@ -638,6 +710,7 @@ require("lazy").setup({
         { "<leader>g", group = "git" },
         { "<leader>b", group = "buffer" },
         { "<leader>s", group = "search" },
+        { "<leader>t", group = "terminal" },
         { "<leader>u", group = "ui/toggle" },
         { "<leader>x", group = "diagnostics/quickfix" },
         { "<leader>w", group = "window", proxy = "<c-w>" },
@@ -739,6 +812,9 @@ map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Increase window height" })
 map("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "Decrease window height" })
 map("n", "<C-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease window width" })
 map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase window width" })
+
+-- Integrated terminals
+map("t", "<C-\\>", [[<C-\><C-n>]], { desc = "Terminal: exit to normal mode" })
 
 -- Buffer navigation
 map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
