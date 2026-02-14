@@ -59,6 +59,9 @@ vim.opt.undofile = true
 -- Mouse
 vim.opt.mouse = "a"
 
+-- Auto-reload files changed outside Neovim (e.g. by external coding agents)
+vim.opt.autoread = true
+
 -- Spell
 vim.opt.spell = false
 
@@ -965,6 +968,17 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("FocusGained", {
   group = git_ui_refresh,
   callback = refresh_git_ui,
+})
+
+-- Auto-reload buffers when external changes are detected.
+-- autoread alone only reloads on :commands; checktime is needed to actually poll.
+vim.api.nvim_create_autocmd({ "FocusGained", "CursorHold", "CursorHoldI" }, {
+  group = vim.api.nvim_create_augroup("nvim-ide-auto-reload", { clear = true }),
+  callback = function()
+    if vim.fn.mode() ~= "c" then
+      vim.cmd("checktime")
+    end
+  end,
 })
 
 -- Highlight on yank
