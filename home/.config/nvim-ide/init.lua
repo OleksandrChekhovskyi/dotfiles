@@ -419,6 +419,12 @@ require("lazy").setup({
     end,
   },
 
+  -- Keep special windows pinned to compatible buffers (prevents replacing toggleterm windows)
+  {
+    "stevearc/stickybuf.nvim",
+    opts = {},
+  },
+
   -- Buffer removal preserving window layout
   {
     "nvim-mini/mini.bufremove",
