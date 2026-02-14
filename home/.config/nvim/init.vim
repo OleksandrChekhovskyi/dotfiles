@@ -2,7 +2,8 @@ set tabstop=4
 set softtabstop=4
 set shiftwidth=4
 set textwidth=0
-set mouse=
+set mouse=a
+set clipboard=unnamedplus
 set spell
 set noswapfile
 syntax on
