@@ -314,7 +314,7 @@ require("lazy").setup({
     },
     opts = {
       sources = { "filesystem", "buffers", "git_status" },
-      open_files_do_not_replace_types = { "terminal", "Trouble", "trouble", "qf", "edgy" },
+      open_files_do_not_replace_types = { "Trouble", "trouble", "qf" },
       filesystem = {
         bind_to_cwd = false,
         follow_current_file = { enabled = true },
