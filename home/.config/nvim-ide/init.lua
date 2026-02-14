@@ -248,7 +248,20 @@ require("lazy").setup({
               info  = diagnostic_icons.Info .. " ",
             },
           },
-          "diff",
+          {
+            "diff",
+            source = function()
+              local s = vim.b.gitsigns_status_dict
+              if not s then
+                return nil
+              end
+              return {
+                added = s.added or 0,
+                modified = s.changed or 0,
+                removed = s.removed or 0,
+              }
+            end,
+          },
         },
         lualine_y = { "location" },
         lualine_z = {
@@ -860,25 +873,22 @@ vim.api.nvim_create_autocmd("QuickFixCmdPost", {
   end,
 })
 
--- Refresh neo-tree git status after commits / external changes.
--- Neo-tree only subscribes to FugitiveChanged natively; gitsigns fires
--- GitSignsUpdate on HEAD/status changes (e.g. commits), GitSignsChanged on
--- stage/unstage, and FocusGained covers git changes made outside Neovim.
-local neotree_git_refresh = vim.api.nvim_create_augroup("nvim-ide-neotree-git-refresh", { clear = true })
-local function fire_neotree_git_event()
+-- Keep neo-tree git status in sync with gitsigns updates.
+local git_ui_refresh = vim.api.nvim_create_augroup("nvim-ide-git-ui-refresh", { clear = true })
+local function refresh_git_ui()
   local ok, events = pcall(require, "neo-tree.events")
   if ok then
     events.fire_event(events.GIT_EVENT)
   end
 end
 vim.api.nvim_create_autocmd("User", {
-  group = neotree_git_refresh,
+  group = git_ui_refresh,
   pattern = { "GitSignsUpdate", "GitSignsChanged" },
-  callback = fire_neotree_git_event,
+  callback = refresh_git_ui,
 })
 vim.api.nvim_create_autocmd("FocusGained", {
-  group = neotree_git_refresh,
-  callback = fire_neotree_git_event,
+  group = git_ui_refresh,
+  callback = refresh_git_ui,
 })
 
 -- Highlight on yank
