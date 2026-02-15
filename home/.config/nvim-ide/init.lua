@@ -165,6 +165,8 @@ require("lazy").setup({
           DiffChange = { bg = "#3a3529" },
           DiffText = { bg = "#4d4632" },
           YankHighlight = { bg = colors.surface2 },
+          BlinkIndent = { fg = colors.surface0 },
+          BlinkIndentScope = { fg = colors.surface1 },
         }
       end,
       integrations = {
@@ -172,7 +174,6 @@ require("lazy").setup({
         diffview = true,
         gitsigns = true,
         neotree = true,
-        indent_blankline = { enabled = true },
         mini = { enabled = true, indentscope_color = "surface2" },
         native_lsp = { enabled = true },
         navic = { enabled = true },
@@ -475,47 +476,28 @@ require("lazy").setup({
     end,
   },
 
-  -- Indent guides
+  -- Indent guides + active scope
   {
-    "lukas-reineke/indent-blankline.nvim",
-    main = "ibl",
+    "saghen/blink.indent",
     opts = {
-      indent = { char = "│" },
-      scope = { enabled = false },
-      exclude = {
-        filetypes = indent_exclude_filetypes,
+      blocked = {
+        buftypes = { include_defaults = true },
+        filetypes = {
+          include_defaults = true,
+          unpack(indent_exclude_filetypes),
+        },
+      },
+      static = {
+        enabled = true,
+        char = "\xe2\x94\x82",
+        highlights = { "BlinkIndent" },
+      },
+      scope = {
+        enabled = true,
+        char = "\xe2\x94\x82",
+        highlights = { "BlinkIndentScope" },
       },
     },
-  },
-
-  -- Active indent scope (VS Code-like current block highlight)
-  {
-    "nvim-mini/mini.indentscope",
-    opts = function()
-      local indentscope = require("mini.indentscope")
-      return {
-        symbol = "│",
-        draw = {
-          delay = 60,
-          animation = indentscope.gen_animation.none(),
-        },
-        options = { try_as_border = true },
-        mappings = {
-          object_scope = "",
-          object_scope_with_border = "",
-          goto_top = "",
-          goto_bottom = "",
-        },
-      }
-    end,
-    init = function()
-      vim.api.nvim_create_autocmd("FileType", {
-        pattern = indent_exclude_filetypes,
-        callback = function()
-          vim.b.miniindentscope_disable = true
-        end,
-      })
-    end,
   },
 
   -- Git diff viewer
