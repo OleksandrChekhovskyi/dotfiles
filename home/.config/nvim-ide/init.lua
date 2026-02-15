@@ -369,6 +369,7 @@ require("lazy").setup({
     opts = {
       start_in_insert = true,
       persist_mode = false,
+      auto_scroll = false,
     },
     config = function(_, opts)
       require("toggleterm").setup(opts)
