@@ -72,10 +72,6 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.updatetime = 250
 vim.opt.timeoutlen = 300
 
--- Keep :make exit status reliable for notifications/quickfix logic.
--- Default Unix shellpipe uses `tee`, which can mask the compiler's exit code.
-vim.opt.shellpipe = "> %s 2>&1"
-
 --------------------------------------------------------------------------------
 -- Diagnostics
 --------------------------------------------------------------------------------
@@ -177,6 +173,8 @@ require("lazy").setup({
         mini = { enabled = true, indentscope_color = "surface2" },
         native_lsp = { enabled = true },
         navic = { enabled = true },
+        noice = true,
+        notify = true,
         which_key = true,
       },
     },
@@ -425,6 +423,70 @@ require("lazy").setup({
   {
     "stevearc/stickybuf.nvim",
     opts = {},
+  },
+
+  -- Task runner
+  {
+    "stevearc/overseer.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      require("overseer").setup({})
+
+      vim.api.nvim_create_user_command("Make", function(params)
+        -- Insert args at the '$*' in the makeprg
+        local cmd, num_subs = vim.o.makeprg:gsub("%$%*", params.args)
+        if num_subs == 0 then
+          cmd = cmd .. " " .. params.args
+        end
+        local notify = require("notify")
+        local notif = notify("Running: " .. cmd, "info", { timeout = false })
+        local task = require("overseer").new_task({
+          cmd = vim.fn.expandcmd(cmd),
+          components = {
+            {
+              "on_output_quickfix",
+              open = false,
+              open_on_match = not params.bang,
+              tail = true,
+            },
+            "on_exit_set_status",
+            { "on_complete_dispose", require_view = { "SUCCESS", "FAILURE" } },
+          },
+        })
+        local function last_output()
+          local bufnr = task:get_bufnr()
+          if bufnr then
+            local lines = require("overseer.util").get_last_output_lines(bufnr, 1)
+            if #lines > 0 then
+              local line = vim.trim(lines[1])
+              if #line > 60 then line = line:sub(1, 57) .. "..." end
+              return line
+            end
+          end
+        end
+        task:subscribe("on_output", function()
+          local line = last_output()
+          if line then
+            notif = notify("Running: " .. cmd .. "\n" .. line, "info", { replace = notif, timeout = false })
+          end
+        end)
+        task:subscribe("on_complete", function(_, status)
+          local level = status == "SUCCESS" and "info" or "error"
+          local msg = status .. ": " .. cmd
+          local line = last_output()
+          if line then msg = msg .. "\n" .. line end
+          notify(msg, level, { replace = notif, timeout = 1500 })
+        end)
+        task:start()
+      end, {
+        desc = "Run your makeprg as an Overseer task",
+        nargs = "*",
+        bang = true,
+      })
+
+      -- Redirect built-in :make to async :Make
+      vim.cmd([[cnoreabbrev <expr> make getcmdtype() == ':' && getcmdline() ==# 'make' ? 'Make' : 'make']])
+    end,
   },
 
   -- Buffer removal preserving window layout
@@ -745,6 +807,7 @@ require("lazy").setup({
         timeout = 1500,
         render = "minimal",
         stages = "static",
+        minimum_width = 60,
       })
       vim.notify = require("notify")
       require("noice").setup(opts)
@@ -903,41 +966,6 @@ vim.api.nvim_create_autocmd("FileType", {
   pattern = "qf",
   callback = function(event)
     vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = event.buf, silent = true })
-  end,
-})
-
--- Show notification and auto-open quickfix after :make.
-vim.api.nvim_create_autocmd("QuickFixCmdPost", {
-  group = vim.api.nvim_create_augroup("nvim-ide-make-notify", { clear = true }),
-  pattern = "make",
-  callback = function()
-    local list = vim.fn.getqflist()
-    local valid = vim.tbl_filter(function(e) return e.valid == 1 end, list)
-    local failed = vim.v.shell_error ~= 0
-
-    if not failed and #valid == 0 then
-      vim.notify("make: no issues", vim.log.levels.INFO)
-      return
-    end
-
-    local msg
-    local level
-    if failed then
-      level = vim.log.levels.ERROR
-      if #valid > 0 then
-        msg = string.format("make failed: %d issue(s)", #valid)
-      else
-        msg = "make failed"
-      end
-    else
-      level = vim.log.levels.WARN
-      msg = string.format("make: %d issue(s)", #valid)
-    end
-
-    vim.notify(msg, level)
-    if #list > 0 then
-      vim.cmd("botright copen")
-    end
   end,
 })
 
