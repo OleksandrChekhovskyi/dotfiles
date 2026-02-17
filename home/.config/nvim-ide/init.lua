@@ -729,12 +729,6 @@ require("lazy").setup({
     },
   },
 
-  -- Toggle comments
-  {
-    "numToStr/Comment.nvim",
-    opts = {},
-  },
-
   -- Auto-close brackets/quotes
   {
     "windwp/nvim-autopairs",
