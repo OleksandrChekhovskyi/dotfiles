@@ -72,6 +72,10 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.updatetime = 250
 vim.opt.timeoutlen = 300
 
+-- Diff/Folding
+vim.opt.diffopt:append("context:10")
+vim.opt.foldminlines = 10
+
 --------------------------------------------------------------------------------
 -- Diagnostics
 --------------------------------------------------------------------------------
