@@ -861,10 +861,16 @@ map("n", "<leader>|", "<cmd>vsplit<cr>", { desc = "Split right" })
 map("n", "<leader>wd", "<C-w>c", { desc = "Delete window" })
 
 -- Window resize
-map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Increase window height" })
-map("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "Decrease window height" })
-map("n", "<C-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease window width" })
-map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase window width" })
+local function resize_win(delta, vertical)
+  local amount = delta * vim.v.count1
+  local cmd = vertical and "vertical resize " or "resize "
+  local signed = amount > 0 and ("+" .. amount) or tostring(amount)
+  vim.cmd(cmd .. signed)
+end
+map("n", "<C-Up>",    function() resize_win( 2, false) end, { desc = "Increase window height" })
+map("n", "<C-Down>",  function() resize_win(-2, false) end, { desc = "Decrease window height" })
+map("n", "<C-Left>",  function() resize_win(-2,  true) end, { desc = "Decrease window width"  })
+map("n", "<C-Right>", function() resize_win( 2,  true) end, { desc = "Increase window width"  })
 
 -- Integrated terminals
 map("t", "<C-\\>", [[<C-\><C-n>]], { desc = "Terminal: exit to normal mode" })
