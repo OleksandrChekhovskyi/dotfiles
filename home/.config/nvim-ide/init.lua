@@ -167,6 +167,9 @@ require("lazy").setup({
           YankHighlight = { bg = colors.surface2 },
           BlinkIndent = { fg = colors.surface0 },
           BlinkIndentScope = { fg = colors.surface1 },
+          ["@markup.raw"] = { fg = colors.lavender },
+          ["@markup.raw.block"] = { fg = colors.lavender },
+          RenderMarkdownCodeInline = { fg = colors.lavender, bg = colors.mantle },
         }
       end,
       integrations = {
