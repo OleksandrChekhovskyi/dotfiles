@@ -997,7 +997,7 @@ vim.api.nvim_create_autocmd("FocusGained", {
 
 -- Auto-reload buffers when external changes are detected.
 -- autoread alone only reloads on :commands; checktime is needed to actually poll.
-vim.api.nvim_create_autocmd({ "FocusGained", "CursorHold", "CursorHoldI" }, {
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
   group = vim.api.nvim_create_augroup("nvim-ide-auto-reload", { clear = true }),
   callback = function()
     if vim.fn.mode() ~= "c" then
