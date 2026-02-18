@@ -166,7 +166,7 @@ require("lazy").setup({
           DiffText = { bg = "#4d4632" },
           YankHighlight = { bg = colors.surface2 },
           BlinkIndent = { fg = colors.surface0 },
-          BlinkIndentScope = { fg = colors.surface1 },
+          MiniIndentscopeSymbol = { fg = colors.surface1 },
           ["@markup.raw"] = { fg = colors.lavender },
           ["@markup.raw.block"] = { fg = colors.lavender },
           RenderMarkdownCodeInline = { fg = colors.lavender, bg = colors.mantle },
@@ -546,7 +546,7 @@ require("lazy").setup({
     end,
   },
 
-  -- Indent guides + active scope
+  -- Indent guides (static only — scope is handled by mini.indentscope)
   {
     "saghen/blink.indent",
     opts = {
@@ -562,12 +562,27 @@ require("lazy").setup({
         char = "\xe2\x94\x82",
         highlights = { "BlinkIndent" },
       },
-      scope = {
-        enabled = true,
-        char = "\xe2\x94\x82",
-        highlights = { "BlinkIndentScope" },
-      },
+      scope = { enabled = false },
     },
+  },
+
+  -- Active indent scope (debounced to avoid treesitter rehighlight storms on scroll)
+  {
+    "echasnovski/mini.indentscope",
+    opts = {
+      symbol = "\xe2\x94\x82",
+      options = { try_as_border = true },
+      draw = { delay = 100 },
+    },
+    config = function(_, opts)
+      local mis = require("mini.indentscope")
+      opts.draw.animation = mis.gen_animation.none()
+      mis.setup(opts)
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = indent_exclude_filetypes,
+        callback = function() vim.b.miniindentscope_disable = true end,
+      })
+    end,
   },
 
   -- Git diff viewer
