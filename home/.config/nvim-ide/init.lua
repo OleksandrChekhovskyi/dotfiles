@@ -235,6 +235,10 @@ require("lazy").setup({
         theme = "catppuccin",
         globalstatus = true,
         component_separators = { left = "", right = "" },
+        -- Reduce idle wakeups from lualine's internal timers.
+        refresh = {
+          refresh_time = 200,
+        },
       },
       sections = {
         lualine_a = { "mode" },
