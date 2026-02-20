@@ -959,6 +959,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
     if client and client.name == "clangd" then
       lmap("n", "<leader>ch", "<cmd>LspClangdSwitchSourceHeader<cr>", "Switch Source/Header (C/C++)")
     end
+    if client and vim.lsp.inlay_hint and client:supports_method("textDocument/inlayHint", buf) then
+      lmap("n", "<leader>uh", function()
+        local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = buf })
+        vim.lsp.inlay_hint.enable(not enabled, { bufnr = buf })
+      end, "Toggle inlay hints")
+    end
     lmap("n", "<leader>cd", vim.diagnostic.open_float, "Line diagnostics")
     lmap("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
     lmap("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
