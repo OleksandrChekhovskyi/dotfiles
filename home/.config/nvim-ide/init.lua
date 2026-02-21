@@ -576,7 +576,7 @@ require("lazy").setup({
     opts = {
       symbol = "\xe2\x94\x82",
       options = { try_as_border = true },
-      draw = { delay = 100 },
+      draw = { delay = 200 },
     },
     config = function(_, opts)
       local mis = require("mini.indentscope")
