@@ -43,7 +43,6 @@ vim.opt.hlsearch = true
 vim.opt.termguicolors = true
 vim.opt.signcolumn = "yes"
 vim.opt.cursorline = true
-vim.opt.scrolloff = 8
 vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 3
