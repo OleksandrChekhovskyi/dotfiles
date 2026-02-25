@@ -782,6 +782,7 @@ require("lazy").setup({
         { "<leader>c", group = "code" },
         { "<leader>g", group = "git" },
         { "<leader>b", group = "buffer" },
+        { "<leader><tab>", group = "tabpage" },
         { "<leader>s", group = "search" },
         { "<leader>t", group = "terminal" },
         { "<leader>u", group = "ui/toggle" },
@@ -907,6 +908,17 @@ map("n", "<leader>bd", function() require("mini.bufremove").wipeout(0, false) en
 map("n", "<leader>bo", "<cmd>BufferLineCloseOthers<cr>", { desc = "Close other buffers" })
 map("n", "<leader>bl", "<cmd>BufferLineCloseLeft<cr>", { desc = "Close buffers to the left" })
 map("n", "<leader>br", "<cmd>BufferLineCloseRight<cr>", { desc = "Close buffers to the right" })
+
+-- Real Vim tabs (tabpages)
+map("n", "<leader><tab><tab>", "<cmd>tabnew<cr>", { desc = "New tabpage" })
+map("n", "<leader><tab>d", "<cmd>tabclose<cr>", { desc = "Close tabpage" })
+map("n", "<leader><tab>o", "<cmd>tabonly<cr>", { desc = "Close other tabpages" })
+map("n", "<leader><tab>[", "<cmd>tabprevious<cr>", { desc = "Previous tabpage" })
+map("n", "<leader><tab>]", "<cmd>tabnext<cr>", { desc = "Next tabpage" })
+map("n", "<leader><tab>f", "<cmd>tabfirst<cr>", { desc = "First tabpage" })
+map("n", "<leader><tab>l", "<cmd>tablast<cr>", { desc = "Last tabpage" })
+map("n", "[t", "<cmd>tabprevious<cr>", { desc = "Previous tabpage" })
+map("n", "]t", "<cmd>tabnext<cr>", { desc = "Next tabpage" })
 
 -- File explorer
 map("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "Toggle file explorer" })
