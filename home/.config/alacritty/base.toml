@@ -2,7 +2,7 @@
 size = 10
 
 [font.normal]
-family = "Hack"
+family = "Hack Nerd Font"
 
 [keyboard]
 bindings = [
