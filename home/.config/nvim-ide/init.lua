@@ -707,6 +707,14 @@ require("lazy").setup({
       keymap = {
         preset = "default",
         ["<CR>"] = { "accept", "fallback" },
+        ["<Esc>"] = {
+          function(cmp)
+            cmp.cancel()
+            -- Always continue to fallback, so <Esc> exits insert mode too
+            return false
+          end,
+          "fallback",
+        },
       },
       appearance = { nerd_font_variant = "mono" },
       completion = {
