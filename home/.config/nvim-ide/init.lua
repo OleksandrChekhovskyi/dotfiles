@@ -571,7 +571,7 @@ require("lazy").setup({
 
   -- Active indent scope (debounced to avoid treesitter rehighlight storms on scroll)
   {
-    "echasnovski/mini.indentscope",
+    "nvim-mini/mini.indentscope",
     opts = {
       symbol = "\xe2\x94\x82",
       options = { try_as_border = true },
@@ -586,6 +586,15 @@ require("lazy").setup({
         callback = function() vim.b.miniindentscope_disable = true end,
       })
     end,
+  },
+
+  -- Textobjects for arguments, function calls, quotes, brackets, and more
+  {
+    "nvim-mini/mini.ai",
+    event = "VeryLazy",
+    opts = {
+      n_lines = 500,
+    },
   },
 
   -- Git diff viewer
