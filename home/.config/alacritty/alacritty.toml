@@ -1,5 +1,6 @@
 [general]
 import = [
     "~/.config/alacritty/base.toml",
+    "~/.config/alacritty/colors.toml",
     "~/.config/alacritty/local.toml",
 ]

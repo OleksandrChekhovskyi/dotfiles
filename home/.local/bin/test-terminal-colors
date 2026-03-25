@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+show_usage() {
+    cat <<'EOF'
+Usage: test-terminal-colors [--basic|--256|--all]
+
+  --basic  Show the standard 16 terminal colors (default)
+  --256    Show the 256-color palette grid
+  --all    Show both views
+EOF
+}
+
+show_basic() {
+    local normal_labels=(black red green yellow blue magenta cyan white)
+    local bright_labels=(
+        bright-black bright-red bright-green bright-yellow
+        bright-blue bright-magenta bright-cyan bright-white
+    )
+    local i
+
+    printf '16-color palette:\n'
+    for i in "${!normal_labels[@]}"; do
+        printf '\033[%sm %-14s \033[0m' "$((30 + i))" "${normal_labels[$i]}"
+        (( (i + 1) % 4 == 0 )) && printf '\n'
+    done
+
+    for i in "${!bright_labels[@]}"; do
+        printf '\033[%sm %-14s \033[0m' "$((90 + i))" "${bright_labels[$i]}"
+        (( (i + 1) % 4 == 0 )) && printf '\n'
+    done
+
+    printf '\nForeground/background combinations:\n'
+    show_combo_row "normal bg" 40 30
+    show_combo_row "bright bg" 100 90
+}
+
+show_256() {
+    local i
+
+    printf '256-color palette:\n'
+    for i in {0..255}; do
+        printf '\033[48;5;%sm%3s\033[0m ' "$i" "$i"
+        (( (i + 1) % 16 == 0 )) && printf '\n'
+    done
+}
+
+show_combo_row() {
+    local title="$1"
+    local bg_base="$2"
+    local fg_base="$3"
+    local labels=(black red green yellow blue magenta cyan white)
+    local readable_fgs=(37 37 30 30 37 37 30 30)
+    local i
+
+    printf '%-10s ' "$title"
+    for i in "${!labels[@]}"; do
+        printf '\033[%s;%sm %-7s \033[0m' "$((bg_base + i))" "${readable_fgs[$i]}" "${labels[$i]}"
+    done
+    printf '\n'
+
+    printf '%-10s ' "matching"
+    for i in "${!labels[@]}"; do
+        printf '\033[%s;%sm %-7s \033[0m' "$((bg_base + i))" "$((fg_base + i))" "${labels[$i]}"
+    done
+    printf '\n'
+}
+
+mode="${1:---basic}"
+
+case "$mode" in
+    --basic)
+        show_basic
+        ;;
+    --256)
+        show_256
+        ;;
+    --all)
+        show_basic
+        printf '\n'
+        show_256
+        ;;
+    -h|--help)
+        show_usage
+        ;;
+    *)
+        show_usage >&2
+        exit 1
+        ;;
+esac

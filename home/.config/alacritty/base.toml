@@ -4,6 +4,9 @@ size = 10
 [font.normal]
 family = "Hack Nerd Font"
 
+[cursor]
+style = { shape = "Beam", blinking = "On" }
+
 [keyboard]
 bindings = [
 	{ key = "Return", mods = "Shift", chars = "\n" },
