@@ -46,6 +46,7 @@ vim.opt.cursorline = true
 vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 3
+vim.opt.fillchars:append({ eob = " " })
 
 -- Splits
 vim.opt.splitbelow = true
@@ -186,7 +187,7 @@ require("lazy").setup({
     },
     config = function(_, opts)
       require("catppuccin").setup(opts)
-      vim.cmd.colorscheme("catppuccin")
+      vim.cmd.colorscheme("catppuccin-nvim")
     end,
   },
 
@@ -231,7 +232,7 @@ require("lazy").setup({
     dependencies = { "nvim-mini/mini.icons", "SmiteshP/nvim-navic", "justinhj/battery.nvim" },
     opts = {
       options = {
-        theme = "catppuccin",
+        theme = "catppuccin-nvim",
         globalstatus = true,
         component_separators = { left = "", right = "" },
         -- Reduce idle wakeups from lualine's internal timers.
@@ -853,7 +854,7 @@ require("lazy").setup({
 }, {
   install = {
     -- Prefer catppuccin during plugin installation when it's available.
-    colorscheme = { "catppuccin", "habamax" },
+    colorscheme = { "catppuccin-nvim", "habamax" },
   },
 })
 
