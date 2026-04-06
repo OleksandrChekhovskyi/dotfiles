@@ -614,8 +614,8 @@ require("lazy").setup({
             vim.bo[bufnr].modifiable = false
             -- Synthetic diffview buffers don't have gitsigns attached.
             -- Provide ]h/[h there without touching real file buffers.
-            vim.keymap.set("n", "]h", "]c", { buffer = bufnr, desc = "Next hunk" })
-            vim.keymap.set("n", "[h", "[c", { buffer = bufnr, desc = "Previous hunk" })
+            vim.keymap.set("n", "]h", "]c", { buf = bufnr, desc = "Next hunk" })
+            vim.keymap.set("n", "[h", "[c", { buf = bufnr, desc = "Previous hunk" })
           end
         end,
         diff_buf_win_enter = function(_, winid)
@@ -649,7 +649,7 @@ require("lazy").setup({
       on_attach = function(bufnr)
         local gs = require("gitsigns")
         local map = function(mode, l, r, desc)
-          vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
+          vim.keymap.set(mode, l, r, { buf = bufnr, desc = desc })
         end
         map("n", "]h", gs.next_hunk, "Next hunk")
         map("n", "[h", gs.prev_hunk, "Previous hunk")
@@ -973,7 +973,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
     local buf = event.buf
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     local lmap = function(mode, l, r, desc)
-      vim.keymap.set(mode, l, r, { buffer = buf, desc = desc })
+      vim.keymap.set(mode, l, r, { buf = buf, desc = desc })
     end
 
     lmap("n", "gd", vim.lsp.buf.definition, "Go to definition")
@@ -1026,7 +1026,7 @@ vim.api.nvim_create_autocmd("FileType", {
   group = vim.api.nvim_create_augroup("nvim-ide-quickfix-close", { clear = true }),
   pattern = "qf",
   callback = function(event)
-    vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = event.buf, silent = true })
+    vim.keymap.set("n", "q", "<cmd>close<cr>", { buf = event.buf, silent = true })
   end,
 })
 
