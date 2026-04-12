@@ -556,14 +556,6 @@ require("diffview").setup({
     win_config = { width = 40 },
   },
   hooks = {
-    diff_buf_read = function(bufnr)
-      local name = vim.api.nvim_buf_get_name(bufnr)
-      if name:find("^diffview://") then
-        vim.bo[bufnr].modifiable = false
-        vim.keymap.set("n", "]h", "]c", { buf = bufnr, desc = "Next hunk" })
-        vim.keymap.set("n", "[h", "[c", { buf = bufnr, desc = "Previous hunk" })
-      end
-    end,
     diff_buf_win_enter = function(_, winid)
       vim.wo[winid].cursorlineopt = "number"
       vim.wo[winid].fillchars = "diff:\xc2\xb7,fold: "
@@ -583,6 +575,43 @@ require("diffview").setup({
     },
   },
 })
+
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = vim.api.nvim_create_augroup("nvim-ide-diffview-buffer", { clear = true }),
+  callback = function(event)
+    local name = vim.api.nvim_buf_get_name(event.buf)
+    if not name:find("^diffview://") then
+      return
+    end
+
+    vim.bo[event.buf].modifiable = false
+    vim.keymap.set("n", "q", "<cmd>DiffviewClose<cr>", { buf = event.buf, desc = "Close diffview" })
+    vim.keymap.set("n", "]h", "]c", { buf = event.buf, desc = "Next hunk" })
+    vim.keymap.set("n", "[h", "[c", { buf = event.buf, desc = "Previous hunk" })
+  end,
+})
+
+local function close_existing_diffviews()
+  local ok, lib = pcall(require, "diffview.lib")
+  if not ok then
+    return
+  end
+
+  local views = {}
+  for _, view in ipairs(lib.views) do
+    table.insert(views, view)
+  end
+
+  for _, view in ipairs(views) do
+    view:close()
+    lib.dispose_view(view)
+  end
+end
+
+local function open_unique_diffview(command)
+  close_existing_diffviews()
+  vim.cmd(command)
+end
 
 -- Git gutter signs
 require("gitsigns").setup({
@@ -850,9 +879,15 @@ map("n", "<leader>ss", "<cmd>FzfLua lsp_document_symbols<cr>", { desc = "LSP doc
 map("n", "<leader>sS", "<cmd>FzfLua lsp_live_workspace_symbols<cr>", { desc = "LSP workspace symbols (live)" })
 
 -- Git tools
-map("n", "<leader>gd", "<cmd>DiffviewOpen<cr>", { desc = "Diff view (index)" })
-map("n", "<leader>gf", "<cmd>DiffviewFileHistory %<cr>", { desc = "File history (current)" })
-map("n", "<leader>gF", "<cmd>DiffviewFileHistory<cr>", { desc = "File history (repo)" })
+map("n", "<leader>gd", function()
+  open_unique_diffview("DiffviewOpen")
+end, { desc = "Diff view (index)" })
+map("n", "<leader>gf", function()
+  open_unique_diffview("DiffviewFileHistory %")
+end, { desc = "File history (current)" })
+map("n", "<leader>gF", function()
+  open_unique_diffview("DiffviewFileHistory")
+end, { desc = "File history (repo)" })
 
 -- UI toggles
 map("n", "<leader>um", "<cmd>RenderMarkdown toggle<cr>", { desc = "Toggle markdown render" })
