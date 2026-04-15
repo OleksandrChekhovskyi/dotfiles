@@ -678,10 +678,13 @@ do
     root_dir = function(bufnr, on_dir)
       local util = require("lspconfig.util")
       local ts_root = util.root_pattern("tsconfig.json")
-      local fallback_root = util.root_pattern("package.json", "jsconfig.json", ".git")
+      local fallback_root = util.root_pattern("package.json", "jsconfig.json")
 
       local fname = vim.api.nvim_buf_get_name(bufnr)
-      local root = ts_root(fname) or fallback_root(fname)
+      local startpath = vim.fs.dirname(fname)
+      local git_dir = startpath and vim.fs.find(".git", { path = startpath, upward = true })[1]
+      local git_root = git_dir and vim.fs.dirname(git_dir)
+      local root = git_root or ts_root(fname) or fallback_root(fname)
       return root and on_dir(root)
     end,
   })
