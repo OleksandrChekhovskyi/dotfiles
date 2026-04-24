@@ -385,13 +385,17 @@ do
 
   local no_appname = "env -u NVIM_APPNAME "
   local shell = os.getenv("SHELL") or "bash"
+  local shell_cmd = no_appname .. shell
+  local claude_cmd = no_appname .. "claude --dangerously-skip-permissions"
+  local codex_cmd = no_appname .. "codex --yolo"
+  local opencode_cmd = no_appname .. "opencode"
 
   local terms = {
-    general  = Terminal:new({ cmd = no_appname .. shell,      direction = "horizontal" }),
-    side     = Terminal:new({ cmd = no_appname .. shell,      direction = "vertical"   }),
-    claude   = Terminal:new({ cmd = no_appname .. "claude",   direction = "vertical"   }),
-    codex    = Terminal:new({ cmd = no_appname .. "codex",    direction = "vertical"   }),
-    opencode = Terminal:new({ cmd = no_appname .. "opencode", direction = "vertical"   }),
+    general  = Terminal:new({ cmd = shell_cmd,    direction = "horizontal" }),
+    side     = Terminal:new({ cmd = shell_cmd,    direction = "vertical"   }),
+    claude   = Terminal:new({ cmd = claude_cmd,   direction = "vertical"   }),
+    codex    = Terminal:new({ cmd = codex_cmd,    direction = "vertical"   }),
+    opencode = Terminal:new({ cmd = opencode_cmd, direction = "vertical"   }),
   }
 
   local function close_terms(except_name)

@@ -15,6 +15,6 @@ Personal dotfiles managed via symlinks.
 
 ## Conventions
 
+- Keep source files and Markdown prose approximately under 120 columns when practical.
 - Keep machine-specific paths and secrets in `~/.bashrc.local`, never in tracked files.
 - `install.sh` is idempotent — re-running it skips already-correct symlinks.
-- For `nvim-ide` changes, do not run Neovim in sandbox to validate setup (it commonly fails there); validate Lua syntax and ask the user to verify behavior locally.
