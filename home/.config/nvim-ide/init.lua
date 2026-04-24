@@ -584,8 +584,13 @@ vim.api.nvim_create_autocmd("BufEnter", {
       return
     end
 
+    local is_commit_log = name:find("/commit_log$") ~= nil
+
     vim.bo[event.buf].modifiable = false
-    vim.keymap.set("n", "q", "<cmd>DiffviewClose<cr>", { buf = event.buf, desc = "Close diffview" })
+    vim.keymap.set("n", "q", is_commit_log and "<cmd>close<cr>" or "<cmd>DiffviewClose<cr>", {
+      buf = event.buf,
+      desc = is_commit_log and "Close commit details" or "Close diffview",
+    })
     vim.keymap.set("n", "]h", "]c", { buf = event.buf, desc = "Next hunk" })
     vim.keymap.set("n", "[h", "[c", { buf = event.buf, desc = "Previous hunk" })
   end,
