@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -u
+
+# Invoke Claude Code and/or Codex once with tiny prompts and low-cost settings.
+# Useful for starting 5h usage limit windows.
+# Usage: ./touch-agents [both|claude|codex]
+
+agent="${1:-both}"
+prompt="${PROMPT:-Reply with OK only.}"
+claude_model="${CLAUDE_MODEL:-haiku}"
+
+pick_codex_model() {
+  if command -v codex >/dev/null 2>&1; then
+    catalog="$(codex debug models 2>/dev/null || true)"
+    for model in gpt-5.4-mini gpt-5-mini gpt-5-nano; do
+      case "$catalog" in
+        *"\"slug\":\"$model\""*) printf '%s\n' "$model"; return 0 ;;
+      esac
+    done
+  fi
+  printf '%s\n' "gpt-5.4-mini"
+}
+
+codex_model="${CODEX_MODEL:-$(pick_codex_model)}"
+
+run_claude() {
+  if ! command -v claude >/dev/null 2>&1; then
+    printf 'claude: command not found\n' >&2
+    return 127
+  fi
+
+  budget_args=()
+  if [ -n "${CLAUDE_MAX_BUDGET_USD:-}" ]; then
+    budget_args=(--max-budget-usd "$CLAUDE_MAX_BUDGET_USD")
+  fi
+
+  printf 'claude: model=%s prompt="%s"\n' "$claude_model" "$prompt" >&2
+  claude \
+    --print \
+    --model "$claude_model" \
+    --effort low \
+    --system-prompt "" \
+    --tools "" \
+    --disable-slash-commands \
+    --no-session-persistence \
+    --output-format text \
+    "${budget_args[@]}" \
+    "$prompt"
+}
+
+run_codex() {
+  if ! command -v codex >/dev/null 2>&1; then
+    printf 'codex: command not found\n' >&2
+    return 127
+  fi
+
+  last_message="$(mktemp "${TMPDIR:-/tmp}/touch-codex-message.XXXXXX")" || return 1
+  run_log="$(mktemp "${TMPDIR:-/tmp}/touch-codex-log.XXXXXX")" || {
+    rm -f "$last_message"
+    return 1
+  }
+
+  printf 'codex: model=%s prompt="%s"\n' "$codex_model" "$prompt" >&2
+  if codex exec \
+    --model "$codex_model" \
+    --skip-git-repo-check \
+    --ephemeral \
+    --ignore-user-config \
+    --ignore-rules \
+    --sandbox read-only \
+    --color never \
+    -c 'model_reasoning_effort="low"' \
+    -c 'model_verbosity="low"' \
+    -c 'model_reasoning_summary="none"' \
+    -c 'shell_environment_policy.inherit="none"' \
+    -c 'instructions=""' \
+    --output-last-message "$last_message" \
+    "$prompt" >"$run_log" 2>&1; then
+    if [ -s "$last_message" ]; then
+      cat "$last_message"
+      [ "$(tail -c 1 "$last_message")" = "" ] || printf '\n'
+    fi
+    rm -f "$last_message" "$run_log"
+    return 0
+  fi
+
+  status=$?
+  printf 'codex failed (exit %s)\n' "$status" >&2
+  sed -n '1,80p' "$run_log" >&2
+  rm -f "$last_message" "$run_log"
+  return "$status"
+}
+
+case "$agent" in
+  both)
+    status=0
+    run_claude || status=$?
+    run_codex || status=$?
+    exit "$status"
+    ;;
+  claude)
+    run_claude
+    ;;
+  codex)
+    run_codex
+    ;;
+  *)
+    printf 'usage: %s [both|claude|codex]\n' "$0" >&2
+    exit 2
+    ;;
+esac
