@@ -23,6 +23,7 @@ vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = false
+vim.opt.smarttab = false
 vim.opt.smartindent = true
 
 -- Line numbers
@@ -169,6 +170,7 @@ vim.api.nvim_create_autocmd("PackChanged", {
 vim.pack.add({
   { src = "https://github.com/catppuccin/nvim", name = "catppuccin" },
   "https://github.com/nvim-lua/plenary.nvim",
+  "https://github.com/NMAC427/guess-indent.nvim",
   "https://github.com/MunifTanjim/nui.nvim",
   "https://github.com/rcarriga/nvim-notify",
   "https://github.com/nvim-mini/mini.icons",
@@ -204,6 +206,43 @@ vim.pack.add({
 -- File icons
 require("mini.icons").setup({})
 MiniIcons.mock_nvim_web_devicons()
+
+-- Detect indentation from existing buffers when no .editorconfig overrides it.
+require("guess-indent").setup({
+  auto_cmd = true,
+  override_editorconfig = false,
+  on_tab_options = {
+    expandtab = false,
+    softtabstop = 0,
+    varsofttabstop = "",
+  },
+  on_space_options = {
+    expandtab = true,
+    tabstop = "detected",
+    softtabstop = "detected",
+    shiftwidth = "detected",
+  },
+})
+
+local function disable_soft_backspace_for_tab_indent(buf)
+  if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
+    return
+  end
+  if not vim.bo[buf].expandtab then
+    vim.bo[buf].softtabstop = 0
+    vim.bo[buf].varsofttabstop = ""
+  end
+end
+
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "BufFilePost", "FileType" }, {
+  group = vim.api.nvim_create_augroup("nvim-ide-tab-indent-backspace", { clear = true }),
+  callback = function(event)
+    local buf = event.buf
+    vim.schedule(function()
+      disable_soft_backspace_for_tab_indent(buf)
+    end)
+  end,
+})
 
 -- Color scheme
 require("catppuccin").setup({
@@ -956,7 +995,11 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     -- l1: align braces in "case X: {" blocks with the case label.
     -- j1: improves indentation for inline lambda/function-style constructs.
-    vim.bo.cinoptions = "l1,j1"
+    -- (s: indent unclosed parentheses one shiftwidth, not the default two.
+    -- u0: keep nested unclosed parentheses at that same continuation indent.
+    -- ks: indent unclosed if/for/while conditions one shiftwidth, not two.
+    -- m1: align closing parentheses with the matching opening line.
+    vim.bo.cinoptions = "l1,j1,(s,u0,ks,m1"
     -- Reindent on block delimiters/preprocessor/newline/else, but not on ":".
     -- Omitting ":" avoids extra reindent churn while typing labels/case lines.
     vim.bo.cinkeys = "0{,0},0),0],0#,!^F,o,O,e"
