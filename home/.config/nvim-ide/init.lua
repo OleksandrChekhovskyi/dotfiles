@@ -1064,9 +1064,20 @@ vim.api.nvim_create_autocmd("BufReadPost", {
   end,
 })
 
+-- Neo-tree's async git status reports ignored files after its fast first pass;
+-- warm it here so gitignored items are hidden before the first tree render.
+local function warm_neo_tree_git_status(path)
+  pcall(function()
+    require("neo-tree").ensure_config()
+    require("neo-tree.git").status(path, nil, false)
+  end)
+end
+
 -- Open an IDE-like layout when starting with a directory: tree left + editor right.
 local function open_ide_layout()
-  require("neo-tree.command").execute({ action = "show", dir = vim.uv.cwd() })
+  local cwd = vim.uv.cwd()
+  warm_neo_tree_git_status(cwd)
+  require("neo-tree.command").execute({ action = "show", dir = cwd })
   vim.cmd("wincmd p")
 end
 
