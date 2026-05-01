@@ -8,20 +8,9 @@ set -u
 agent="${1:-both}"
 prompt="${PROMPT:-Reply with OK only.}"
 claude_model="${CLAUDE_MODEL:-haiku}"
-
-pick_codex_model() {
-  if command -v codex >/dev/null 2>&1; then
-    catalog="$(codex debug models 2>/dev/null || true)"
-    for model in gpt-5.4-mini gpt-5-mini gpt-5-nano; do
-      case "$catalog" in
-        *"\"slug\":\"$model\""*) printf '%s\n' "$model"; return 0 ;;
-      esac
-    done
-  fi
-  printf '%s\n' "gpt-5.4-mini"
-}
-
-codex_model="${CODEX_MODEL:-$(pick_codex_model)}"
+# Hardcode the cheapest known codex slug. Override via CODEX_MODEL when this
+# gets renamed (run `codex debug models` to see the current catalog).
+codex_model="${CODEX_MODEL:-gpt-5.4-mini}"
 
 run_claude() {
   if ! command -v claude >/dev/null 2>&1; then
@@ -35,7 +24,10 @@ run_claude() {
   fi
 
   printf 'claude: model=%s prompt="%s"\n' "$claude_model" "$prompt" >&2
-  claude \
+  # Note: --bare would strip the system prompt further, but it forces auth via
+  # ANTHROPIC_API_KEY/apiKeyHelper only — it bypasses keychain/OAuth, which
+  # breaks the common login setup. Stick with --system-prompt "" instead.
+  out="$(claude \
     --print \
     --model "$claude_model" \
     --effort low \
@@ -43,9 +35,18 @@ run_claude() {
     --tools "" \
     --disable-slash-commands \
     --no-session-persistence \
-    --output-format text \
+    --strict-mcp-config \
+    --output-format json \
     "${budget_args[@]}" \
-    "$prompt"
+    "$prompt")" || return $?
+
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s\n' "$out" | jq -r '.result // empty'
+    printf '%s\n' "$out" | jq -r '"claude usage: input=\(.usage.input_tokens // 0) output=\(.usage.output_tokens // 0) cost_usd=\(.total_cost_usd // 0)"' >&2
+  else
+    printf '%s\n' "$out"
+    printf 'claude usage: jq not installed; raw json above\n' >&2
+  fi
 }
 
 run_codex() {
@@ -69,16 +70,26 @@ run_codex() {
     --ignore-rules \
     --sandbox read-only \
     --color never \
+    --json \
     -c 'model_reasoning_effort="low"' \
     -c 'model_verbosity="low"' \
     -c 'model_reasoning_summary="none"' \
     -c 'shell_environment_policy.inherit="none"' \
     -c 'instructions=""' \
+    -c 'base_instructions=""' \
+    -c 'include_apply_patch_tool=false' \
+    -c 'mcp_servers={}' \
     --output-last-message "$last_message" \
     "$prompt" >"$run_log" 2>&1; then
     if [ -s "$last_message" ]; then
       cat "$last_message"
       [ "$(tail -c 1 "$last_message")" = "" ] || printf '\n'
+    fi
+    if command -v jq >/dev/null 2>&1; then
+      grep '"type":"turn.completed"' "$run_log" | tail -1 | \
+        jq -r '"codex usage: input=\(.usage.input_tokens // 0) cached=\(.usage.cached_input_tokens // 0) output=\(.usage.output_tokens // 0) reasoning=\(.usage.reasoning_output_tokens // 0)"' >&2
+    else
+      printf 'codex usage: jq not installed\n' >&2
     fi
     rm -f "$last_message" "$run_log"
     return 0
