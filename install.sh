@@ -13,7 +13,11 @@ find "$SCRIPT_DIR/home" -type f | while read -r src; do
         continue
     fi
 
-    if [ -e "$target" ] || [ -L "$target" ]; then
+    # Symlink left by a previous run from a different repo location (relocation): drop without backup.
+    if [ -L "$target" ] && [[ "$(readlink "$target")" == */home/"$relpath" ]]; then
+        rm "$target"
+        echo "relink $relpath"
+    elif [ -e "$target" ] || [ -L "$target" ]; then
         backup="$BACKUP_DIR/$relpath"
         mkdir -p "$(dirname "$backup")"
         mv "$target" "$backup"
