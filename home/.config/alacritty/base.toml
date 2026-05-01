@@ -12,4 +12,18 @@ bindings = [
 	{ key = "Return", mods = "Shift", chars = "\n" },
 	{ key = "K", mods = "Control|Shift", chars = "\f" },
 	{ key = "N", mods = "Control|Shift", action = "CreateNewWindow" },
+	# macOS-only: forward Cmd+Arrow / Cmd+hjkl to tmux as user-keys.
+	# Inert on Linux (no Command modifier).
+	{ key = "Left",  mods = "Command",       chars = "\u001B[5900~" },
+	{ key = "Right", mods = "Command",       chars = "\u001B[5901~" },
+	{ key = "Left",  mods = "Command|Shift", chars = "\u001B[5902~" },
+	{ key = "Right", mods = "Command|Shift", chars = "\u001B[5903~" },
+	{ key = "H",     mods = "Command",       chars = "\u001B[5904~" },
+	{ key = "J",     mods = "Command",       chars = "\u001B[5905~" },
+	{ key = "K",     mods = "Command",       chars = "\u001B[5906~" },
+	{ key = "L",     mods = "Command",       chars = "\u001B[5907~" },
+	{ key = "H",     mods = "Command|Shift", chars = "\u001B[5908~" },
+	{ key = "J",     mods = "Command|Shift", chars = "\u001B[5909~" },
+	{ key = "K",     mods = "Command|Shift", chars = "\u001B[5910~" },
+	{ key = "L",     mods = "Command|Shift", chars = "\u001B[5911~" },
 ]
