@@ -427,6 +427,7 @@ do
   local shell_cmd = no_appname .. shell
   local claude_cmd = no_appname .. "claude --dangerously-skip-permissions"
   local codex_cmd = no_appname .. "codex --yolo"
+  local hax_cmd = no_appname .. "hax"
   local opencode_cmd = no_appname .. "opencode"
 
   local terms = {
@@ -434,6 +435,7 @@ do
     side     = Terminal:new({ cmd = shell_cmd,    direction = "vertical"   }),
     claude   = Terminal:new({ cmd = claude_cmd,   direction = "vertical"   }),
     codex    = Terminal:new({ cmd = codex_cmd,    direction = "vertical"   }),
+    hax      = Terminal:new({ cmd = hax_cmd,      direction = "vertical"   }),
     opencode = Terminal:new({ cmd = opencode_cmd, direction = "vertical"   }),
   }
 
@@ -460,6 +462,7 @@ do
   user_command("TermSide",     function() toggle_term("side", side_size) end, "Toggle general side terminal")
   user_command("TermClaude",   function() toggle_term("claude", side_size) end, "Toggle Claude Code side terminal")
   user_command("TermCodex",    function() toggle_term("codex", side_size) end, "Toggle Codex side terminal")
+  user_command("TermHax",      function() toggle_term("hax", side_size) end, "Toggle hax side terminal")
   user_command("TermOpenCode", function() toggle_term("opencode", side_size) end, "Toggle OpenCode side terminal")
 end
 
@@ -876,6 +879,7 @@ map("n", "<leader>tt", "<cmd>TermGeneral<cr>", { desc = "Terminal: general (bott
 map("n", "<leader>ts", "<cmd>TermSide<cr>", { desc = "Terminal: general (side)" })
 map("n", "<leader>tc", "<cmd>TermClaude<cr>", { desc = "Terminal: Claude Code (side)" })
 map("n", "<leader>tx", "<cmd>TermCodex<cr>", { desc = "Terminal: Codex (side)" })
+map("n", "<leader>th", "<cmd>TermHax<cr>", { desc = "Terminal: hax (side)" })
 map("n", "<leader>to", "<cmd>TermOpenCode<cr>", { desc = "Terminal: OpenCode (side)" })
 
 -- Buffer navigation

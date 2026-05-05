@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# Prefers hax checked out at ~/source/hax
+# See: https://github.com/OleksandrChekhovskyi/hax
+
+repo_dir="$HOME/source/hax"
+hax_bin="$repo_dir/build/hax"
+launcher_path="${BASH_SOURCE[0]}"
+
+if [[ -x "$hax_bin" ]]; then
+  exec "$hax_bin" "$@"
+fi
+
+if [[ "$launcher_path" != */* ]]; then
+  launcher_path="$(command -v -- "$launcher_path")"
+fi
+
+while IFS= read -r candidate; do
+  if [[ -n "$launcher_path" && "$candidate" -ef "$launcher_path" ]]; then
+    continue
+  fi
+
+  exec "$candidate" "$@"
+done < <(type -aP hax)
+
+if [[ ! -d "$repo_dir" ]]; then
+  echo "Error: hax repo not found at $repo_dir, and no hax found in PATH" >&2
+else
+  echo "Error: hax build not found at $hax_bin, and no hax found in PATH" >&2
+fi
+exit 1
