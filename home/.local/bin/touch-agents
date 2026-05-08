@@ -75,8 +75,7 @@ run_codex() {
     -c 'model_verbosity="low"' \
     -c 'model_reasoning_summary="none"' \
     -c 'shell_environment_policy.inherit="none"' \
-    -c 'instructions=""' \
-    -c 'base_instructions=""' \
+    -c 'instructions="."' \
     -c 'include_apply_patch_tool=false' \
     -c 'mcp_servers={}' \
     --output-last-message "$last_message" \
