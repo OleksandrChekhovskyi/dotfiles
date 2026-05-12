@@ -529,8 +529,15 @@ vim.cmd([[cnoreabbrev <expr> make getcmdtype() == ':' && getcmdline() ==# 'make'
 require("fzf-lua").setup({
   "default",
   winopts = { height = 0.85, width = 0.80 },
+  fzf_opts = {
+    ["--tabstop"] = "4",
+  },
   files = {
     cwd_prompt = false,
+  },
+  grep = {
+    multiline = 1,
+    rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --trim -e]],
   },
 })
 
