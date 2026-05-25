@@ -1,0 +1,9 @@
+[font]
+size = 13
+offset.x = 1
+offset.y = 1
+
+[window]
+decorations = "none"
+# Make Option behave as a real Alt/Meta so Alt+hjkl etc. reach tmux and the shell as M-* sequences.
+option_as_alt = "Both"

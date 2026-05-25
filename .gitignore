@@ -1,3 +1,4 @@
 *.swp
 *~
 .DS_Store
+home/.config/alacritty/local.toml
