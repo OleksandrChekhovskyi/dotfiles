@@ -284,6 +284,11 @@ require("nvim-navic").setup({
 })
 
 -- Battery status
+-- Prefer sysfs on Linux; acpi can report peripheral batteries as bogus laptop batteries.
+if vim.uv.os_uname().sysname == "Linux" and vim.fn.isdirectory("/sys/class/power_supply") == 1 then
+  require("battery.parsers").parsers.acpi = nil
+end
+
 require("battery").setup({
   update_rate_seconds = 30,
   show_status_when_no_battery = false,
