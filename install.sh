@@ -46,7 +46,7 @@ install_tree() {
     local root="$1"
     local skip_overridden="${2:-false}"
 
-    [ -d "$root" ] || return
+    [ -d "$root" ] || return 0
 
     find "$root" -type f | while read -r src; do
         local relpath="${src#"$root/"}"
