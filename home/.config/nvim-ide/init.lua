@@ -676,6 +676,21 @@ local function open_unique_diffview(command)
   vim.cmd(command)
 end
 
+local function git_has_changes()
+  local file = vim.api.nvim_buf_get_name(0)
+  local cwd = file ~= "" and vim.fs.dirname(file) or vim.uv.cwd()
+  local result = vim.system({
+    "git",
+    "-C",
+    cwd,
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=normal",
+  }, { text = true }):wait()
+
+  return result.code == 0 and result.stdout ~= ""
+end
+
 -- Git gutter signs
 require("gitsigns").setup({
   on_attach = function(bufnr)
@@ -947,14 +962,18 @@ map("n", "<leader>sS", "<cmd>FzfLua lsp_live_workspace_symbols<cr>", { desc = "L
 
 -- Git tools
 map("n", "<leader>gd", function()
-  open_unique_diffview("DiffviewOpen")
-end, { desc = "Diff view (index)" })
+  if git_has_changes() then
+    open_unique_diffview("DiffviewOpen")
+  else
+    open_unique_diffview("DiffviewFileHistory")
+  end
+end, { desc = "Diff view or repo history" })
 map("n", "<leader>gf", function()
   open_unique_diffview("DiffviewFileHistory %")
 end, { desc = "File history (current)" })
-map("n", "<leader>gF", function()
+map("n", "<leader>gg", function()
   open_unique_diffview("DiffviewFileHistory")
-end, { desc = "File history (repo)" })
+end, { desc = "Git log (repo history)" })
 
 -- UI toggles
 map("n", "<leader>um", "<cmd>RenderMarkdown toggle<cr>", { desc = "Toggle markdown render" })
