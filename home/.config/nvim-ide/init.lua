@@ -609,6 +609,7 @@ require("mini.ai").setup({
 })
 
 -- Git diff viewer
+local diffview_actions = require("diffview.actions")
 require("diffview").setup({
   enhanced_diff_hl = true,
   show_help_hints = false,
@@ -626,12 +627,15 @@ require("diffview").setup({
       { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
       { "n", "za", "za", { desc = "Toggle fold" } },
       { "n", "zi", "zi", { desc = "Toggle foldenable" } },
+      { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
     },
     file_panel = {
       { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
+      { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
     },
     file_history_panel = {
       { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
+      { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
     },
   },
 })
