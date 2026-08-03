@@ -37,13 +37,14 @@
       }
     ]
   },
+  "disableAgentView": true,
   "disableWorkflows": true,
   "feedbackSurveyRate": 0,
   "spinnerTipsEnabled": false,
   "effortLevel": "high",
   "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
   "autoMemoryEnabled": false,
   "autoDreamEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
-  "awaySummaryEnabled": false
+  "skipDangerousModePermissionPrompt": true
 }
