@@ -891,7 +891,9 @@ map("n", "<C-l>", "<C-w>l", { desc = "Go to right window" })
 
 -- Window management
 map("n", "<leader>-", "<cmd>split<cr>", { desc = "Split below" })
+-- `\` is the unshifted form of `|`, kept as a convenience alias.
 map("n", "<leader>|", "<cmd>vsplit<cr>", { desc = "Split right" })
+map("n", "<leader>\\", "<cmd>vsplit<cr>", { desc = "Split right" })
 map("n", "<leader>wd", "<C-w>c", { desc = "Delete window" })
 
 -- Window resize
