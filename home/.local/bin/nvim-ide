@@ -1,2 +1,2 @@
-#!/usr/bin/env bash
+#!/bin/sh
 NVIM_APPNAME=nvim-ide exec nvim "$@"

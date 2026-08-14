@@ -87,7 +87,12 @@ local diagnostic_icons = {
 vim.diagnostic.config({
   virtual_text = {
     prefix = function(diagnostic)
-      local icons = { diagnostic_icons.Error, diagnostic_icons.Warn, diagnostic_icons.Info, diagnostic_icons.Hint }
+      local icons = {
+        diagnostic_icons.Error,
+        diagnostic_icons.Warn,
+        diagnostic_icons.Info,
+        diagnostic_icons.Hint,
+      }
       return icons[diagnostic.severity] or diagnostic_icons.Info
     end,
     spacing = 1,
@@ -465,12 +470,18 @@ do
     vim.api.nvim_create_user_command(name, rhs, { desc = desc })
   end
 
-  user_command("TermGeneral",  function() toggle_term("general", bottom_size) end, "Toggle bottom terminal")
-  user_command("TermSide",     function() toggle_term("side", side_size) end, "Toggle general side terminal")
-  user_command("TermClaude",   function() toggle_term("claude", side_size) end, "Toggle Claude Code side terminal")
-  user_command("TermCodex",    function() toggle_term("codex", side_size) end, "Toggle Codex side terminal")
-  user_command("TermHax",      function() toggle_term("hax", side_size) end, "Toggle hax side terminal")
-  user_command("TermOpenCode", function() toggle_term("opencode", side_size) end, "Toggle OpenCode side terminal")
+  user_command("TermGeneral", function() toggle_term("general", bottom_size) end,
+    "Toggle bottom terminal")
+  user_command("TermSide", function() toggle_term("side", side_size) end,
+    "Toggle general side terminal")
+  user_command("TermClaude", function() toggle_term("claude", side_size) end,
+    "Toggle Claude Code side terminal")
+  user_command("TermCodex", function() toggle_term("codex", side_size) end,
+    "Toggle Codex side terminal")
+  user_command("TermHax", function() toggle_term("hax", side_size) end,
+    "Toggle hax side terminal")
+  user_command("TermOpenCode", function() toggle_term("opencode", side_size) end,
+    "Toggle OpenCode side terminal")
 end
 
 -- Keep special windows pinned to compatible buffers (prevents replacing toggleterm windows)
@@ -513,7 +524,10 @@ vim.api.nvim_create_user_command("Make", function(params)
   task:subscribe("on_output", function()
     local line = last_output()
     if line then
-      notif = notify("Running: " .. cmd .. "\n" .. line, "info", { replace = notif, timeout = false })
+      notif = notify("Running: " .. cmd .. "\n" .. line, "info", {
+        replace = notif,
+        timeout = false,
+      })
     end
   end)
   task:subscribe("on_complete", function(_, status)
@@ -530,7 +544,8 @@ end, {
   bang = true,
 })
 
-vim.cmd([[cnoreabbrev <expr> make getcmdtype() == ':' && getcmdline() ==# 'make' ? 'Make' : 'make']])
+vim.cmd("cnoreabbrev <expr> make "
+  .. "getcmdtype() == ':' && getcmdline() ==# 'make' ? 'Make' : 'make'")
 
 -- Fuzzy finder
 require("fzf-lua").setup({
@@ -544,7 +559,8 @@ require("fzf-lua").setup({
   },
   grep = {
     multiline = 1,
-    rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --trim -e]],
+    rg_opts = "--column --line-number --no-heading --color=always "
+      .. "--smart-case --max-columns=4096 --trim -e",
   },
 })
 
@@ -923,7 +939,9 @@ map("n", "<S-l>", "<cmd>bnext<cr>", { desc = "Next buffer" })
 map("n", "[b", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
 map("n", "]b", "<cmd>bnext<cr>", { desc = "Next buffer" })
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
-map("n", "<leader>bd", function() require("mini.bufremove").wipeout(0, false) end, { desc = "Close buffer (keep layout)" })
+map("n", "<leader>bd", function()
+  require("mini.bufremove").wipeout(0, false)
+end, { desc = "Close buffer (keep layout)" })
 map("n", "<leader>bo", "<cmd>BufferLineCloseOthers<cr>", { desc = "Close other buffers" })
 map("n", "<leader>bl", "<cmd>BufferLineCloseLeft<cr>", { desc = "Close buffers to the left" })
 map("n", "<leader>br", "<cmd>BufferLineCloseRight<cr>", { desc = "Close buffers to the right" })
@@ -966,7 +984,9 @@ map("n", "<leader>sh", "<cmd>FzfLua helptags<cr>", { desc = "Help pages" })
 map("n", "<leader>sw", "<cmd>FzfLua grep_cword<cr>", { desc = "Grep word under cursor" })
 map("n", "<leader>sd", "<cmd>FzfLua diagnostics_document<cr>", { desc = "Diagnostics" })
 map("n", "<leader>ss", "<cmd>FzfLua lsp_document_symbols<cr>", { desc = "LSP document symbols" })
-map("n", "<leader>sS", "<cmd>FzfLua lsp_live_workspace_symbols<cr>", { desc = "LSP workspace symbols (live)" })
+map("n", "<leader>sS", "<cmd>FzfLua lsp_live_workspace_symbols<cr>", {
+  desc = "LSP workspace symbols (live)",
+})
 
 -- Git tools
 map("n", "<leader>gd", function()
@@ -1009,7 +1029,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
     lmap("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
     lmap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
     if client and client.name == "clangd" then
-      lmap("n", "<leader>ch", "<cmd>LspClangdSwitchSourceHeader<cr>", "Switch Source/Header (C/C++)")
+      lmap(
+        "n",
+        "<leader>ch",
+        "<cmd>LspClangdSwitchSourceHeader<cr>",
+        "Switch Source/Header (C/C++)"
+      )
     end
     if client and vim.lsp.inlay_hint and client:supports_method("textDocument/inlayHint", buf) then
       lmap("n", "<leader>uh", function()
@@ -1020,10 +1045,18 @@ vim.api.nvim_create_autocmd("LspAttach", {
     lmap("n", "<leader>cd", vim.diagnostic.open_float, "Line diagnostics")
     lmap("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
     lmap("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
-    lmap("n", "[e", function() vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR }) end, "Previous error")
-    lmap("n", "]e", function() vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR }) end, "Next error")
-    lmap("n", "[w", function() vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.WARN }) end, "Previous warning")
-    lmap("n", "]w", function() vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.WARN }) end, "Next warning")
+    lmap("n", "[e", function()
+      vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR })
+    end, "Previous error")
+    lmap("n", "]e", function()
+      vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR })
+    end, "Next error")
+    lmap("n", "[w", function()
+      vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.WARN })
+    end, "Previous warning")
+    lmap("n", "]w", function()
+      vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.WARN })
+    end, "Next warning")
   end,
 })
 

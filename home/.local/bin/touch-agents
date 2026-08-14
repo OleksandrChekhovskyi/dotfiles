@@ -1,18 +1,21 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -u
 
 # Invoke Claude Code and/or Codex once with tiny prompts and low-cost settings.
 # Useful for starting 5h usage limit windows.
 # Usage: ./touch-agents [both|claude|codex]
 
-agent="${1:-both}"
-claude_prompt="${CLAUDE_PROMPT:-${PROMPT:-Reply with OK only.}}"
-codex_nonce="${CODEX_NONCE:-$(date +%s)-$$}"
-codex_prompt="${CODEX_PROMPT:-${PROMPT:-In exactly 50 words, say this harmless subscription-window touch succeeded. Include nonce $codex_nonce.}}"
-claude_model="${CLAUDE_MODEL:-haiku}"
+agent=${1:-both}
+claude_prompt=${CLAUDE_PROMPT:-${PROMPT:-Reply with OK only.}}
+codex_nonce=${CODEX_NONCE:-$(date +%s)-$$}
+default_codex_prompt='In exactly 50 words, say this harmless subscription-window touch '
+default_codex_prompt="${default_codex_prompt}succeeded. Include nonce $codex_nonce."
+codex_prompt=${CODEX_PROMPT:-${PROMPT:-$default_codex_prompt}}
+unset default_codex_prompt
+claude_model=${CLAUDE_MODEL:-haiku}
 # Use a regular Codex model by default; tiny/mini turns can be too small to
 # durably move subscription windows. Override via CODEX_MODEL if needed.
-codex_model="${CODEX_MODEL:-gpt-5.5}"
+codex_model=${CODEX_MODEL:-gpt-5.5}
 
 run_claude() {
   if ! command -v claude >/dev/null 2>&1; then
@@ -20,16 +23,16 @@ run_claude() {
     return 127
   fi
 
-  budget_args=()
+  set --
   if [ -n "${CLAUDE_MAX_BUDGET_USD:-}" ]; then
-    budget_args=(--max-budget-usd "$CLAUDE_MAX_BUDGET_USD")
+    set -- --max-budget-usd "$CLAUDE_MAX_BUDGET_USD"
   fi
 
   printf 'claude: model=%s prompt="%s"\n' "$claude_model" "$claude_prompt" >&2
   # Note: --bare would strip the system prompt further, but it forces auth via
   # ANTHROPIC_API_KEY/apiKeyHelper only — it bypasses keychain/OAuth, which
   # breaks the common login setup. Stick with --system-prompt "" instead.
-  out="$(env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN claude \
+  out=$(env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN claude \
     --print \
     --model "$claude_model" \
     --effort low \
@@ -39,12 +42,16 @@ run_claude() {
     --no-session-persistence \
     --strict-mcp-config \
     --output-format json \
-    "${budget_args[@]}" \
-    "$claude_prompt")" || return $?
+    "$@" \
+    "$claude_prompt") || return $?
 
   if command -v jq >/dev/null 2>&1; then
     printf '%s\n' "$out" | jq -r '.result // empty'
-    printf '%s\n' "$out" | jq -r '"claude usage: input=\(.usage.input_tokens // 0) output=\(.usage.output_tokens // 0) cost_usd=\(.total_cost_usd // 0)"' >&2
+    printf '%s\n' "$out" | jq -r '
+      "claude usage: input=\(.usage.input_tokens // 0) " +
+      "output=\(.usage.output_tokens // 0) " +
+      "cost_usd=\(.total_cost_usd // 0)"
+    ' >&2
   else
     printf '%s\n' "$out"
     printf 'claude usage: jq not installed; raw json above\n' >&2
@@ -57,22 +64,22 @@ run_codex() {
     return 127
   fi
 
-  last_message="$(mktemp "${TMPDIR:-/tmp}/touch-codex-message.XXXXXX")" || return 1
-  run_log="$(mktemp "${TMPDIR:-/tmp}/touch-codex-log.XXXXXX")" || {
+  last_message=$(mktemp "${TMPDIR:-/tmp}/touch-codex-message.XXXXXX") || return 1
+  run_log=$(mktemp "${TMPDIR:-/tmp}/touch-codex-log.XXXXXX") || {
     rm -f "$last_message"
     return 1
   }
 
-  ephemeral_args=(--ephemeral)
+  set -- --ephemeral
   if [ "${CODEX_EPHEMERAL:-1}" = 0 ]; then
-    ephemeral_args=()
+    set --
   fi
 
   printf 'codex: model=%s prompt="%s"\n' "$codex_model" "$codex_prompt" >&2
   if env -u CODEX_API_KEY -u OPENAI_API_KEY codex exec \
     --model "$codex_model" \
     --skip-git-repo-check \
-    "${ephemeral_args[@]}" \
+    "$@" \
     --ignore-user-config \
     --ignore-rules \
     --sandbox read-only \
@@ -93,7 +100,12 @@ run_codex() {
     fi
     if command -v jq >/dev/null 2>&1; then
       grep '"type":"turn.completed"' "$run_log" | tail -1 | \
-        jq -r '"codex usage: input=\(.usage.input_tokens // 0) cached=\(.usage.cached_input_tokens // 0) output=\(.usage.output_tokens // 0) reasoning=\(.usage.reasoning_output_tokens // 0)"' >&2
+        jq -r '
+          "codex usage: input=\(.usage.input_tokens // 0) " +
+          "cached=\(.usage.cached_input_tokens // 0) " +
+          "output=\(.usage.output_tokens // 0) " +
+          "reasoning=\(.usage.reasoning_output_tokens // 0)"
+        ' >&2
     else
       printf 'codex usage: jq not installed\n' >&2
     fi
@@ -108,7 +120,7 @@ run_codex() {
   return "$status"
 }
 
-case "$agent" in
+case $agent in
   both)
     status=0
     run_claude || status=$?

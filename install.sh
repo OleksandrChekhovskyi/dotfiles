@@ -1,68 +1,79 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR=$(CDPATH= cd "$(dirname "$0")" && pwd)
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d%H%M%S)"
 
-case "$(uname -s)" in
+OS_NAME=$(uname -s)
+case $OS_NAME in
     Darwin) OS_HOME="$SCRIPT_DIR/home.macos" ;;
     Linux) OS_HOME="$SCRIPT_DIR/home.linux" ;;
-    *) OS_HOME="" ;;
+    FreeBSD) OS_HOME="$SCRIPT_DIR/home.freebsd" ;;
+    OpenBSD) OS_HOME="$SCRIPT_DIR/home.openbsd" ;;
+    *) OS_HOME= ;;
 esac
 
 has_os_override() {
-    local relpath="$1"
-    [ -n "$OS_HOME" ] && [ -f "$OS_HOME/$relpath" ]
+    [ -n "$OS_HOME" ] && [ -f "$OS_HOME/$1" ]
 }
 
 link_file() {
-    local src="$1"
-    local relpath="$2"
-    local target="$HOME/$relpath"
-    local backup
+    link_src=$1
+    link_relpath=$2
+    link_target=$HOME/$link_relpath
 
-    if [ -L "$target" ] && [ "$(readlink "$target")" = "$src" ]; then
-        echo "skip $relpath"
+    if [ -L "$link_target" ] && [ "$(readlink "$link_target")" = "$link_src" ]; then
+        echo "skip $link_relpath"
         return
     fi
 
     # Symlink left by a previous run from this repo: drop without backup.
-    if [ -L "$target" ] && [[ "$(readlink "$target")" == "$SCRIPT_DIR"/home*/* ]]; then
-        rm "$target"
-        echo "relink $relpath"
-    elif [ -e "$target" ] || [ -L "$target" ]; then
-        backup="$BACKUP_DIR/$relpath"
-        mkdir -p "$(dirname "$backup")"
-        mv "$target" "$backup"
-        echo "backup $relpath -> $backup"
+    if [ -L "$link_target" ]; then
+        case $(readlink "$link_target") in
+            "$SCRIPT_DIR"/home*/*)
+                rm "$link_target"
+                echo "relink $link_relpath"
+                ;;
+            *)
+                link_backup=$BACKUP_DIR/$link_relpath
+                mkdir -p "$(dirname "$link_backup")"
+                mv "$link_target" "$link_backup"
+                echo "backup $link_relpath -> $link_backup"
+                ;;
+        esac
+    elif [ -e "$link_target" ]; then
+        link_backup=$BACKUP_DIR/$link_relpath
+        mkdir -p "$(dirname "$link_backup")"
+        mv "$link_target" "$link_backup"
+        echo "backup $link_relpath -> $link_backup"
     fi
 
-    mkdir -p "$(dirname "$target")"
-    ln -s "$src" "$target"
-    echo "link $relpath"
+    mkdir -p "$(dirname "$link_target")"
+    ln -s "$link_src" "$link_target"
+    echo "link $link_relpath"
 }
 
 install_tree() {
-    local root="$1"
-    local skip_overridden="${2:-false}"
+    install_root=$1
+    install_skip_overridden=${2:-false}
 
-    [ -d "$root" ] || return 0
+    [ -d "$install_root" ] || return 0
 
-    find "$root" -type f | while read -r src; do
-        local relpath="${src#"$root/"}"
+    find "$install_root" -type f | while IFS= read -r install_src; do
+        install_relpath=${install_src#"$install_root/"}
 
-        if [ "$skip_overridden" = true ] && has_os_override "$relpath"; then
+        if [ "$install_skip_overridden" = true ] && has_os_override "$install_relpath"; then
             continue
         fi
 
-        link_file "$src" "$relpath"
+        link_file "$install_src" "$install_relpath"
     done
 }
 
 install_tree "$SCRIPT_DIR/home" true
 install_tree "$OS_HOME"
 
-if [ ! -f "$HOME/.bashrc.local" ]; then
+if [ ! -f "$HOME/.profile.local" ]; then
     echo ""
-    echo "Reminder: create ~/.bashrc.local for machine-specific config."
+    echo "Reminder: create ~/.profile.local for machine-specific environment config."
 fi

@@ -1,29 +1,36 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Prefers hax checked out at ~/source/hax
 # See: https://github.com/OleksandrChekhovskyi/hax
 
-repo_dir="$HOME/source/hax"
-hax_bin="$repo_dir/build/hax"
-launcher_path="${BASH_SOURCE[0]}"
+repo_dir=$HOME/source/hax
+hax_bin=$repo_dir/build/hax
+launcher_path=$0
 
-if [[ -x "$hax_bin" ]]; then
+if [ -x "$hax_bin" ]; then
   exec "$hax_bin" "$@"
 fi
 
-if [[ "$launcher_path" != */* ]]; then
-  launcher_path="$(command -v -- "$launcher_path")"
-fi
+case $launcher_path in
+  */*) ;;
+  *) launcher_path=$(command -v "$launcher_path" 2>/dev/null || true) ;;
+esac
 
-while IFS= read -r candidate; do
-  if [[ -n "$launcher_path" && "$candidate" -ef "$launcher_path" ]]; then
+search_path=${PATH-}:
+while [ -n "$search_path" ]; do
+  candidate_dir=${search_path%%:*}
+  search_path=${search_path#*:}
+  [ -n "$candidate_dir" ] || candidate_dir=.
+  candidate=$candidate_dir/hax
+  [ -x "$candidate" ] || continue
+  if [ -n "$launcher_path" ] && [ "$candidate" -ef "$launcher_path" ]; then
     continue
   fi
 
   exec "$candidate" "$@"
-done < <(type -aP hax)
+done
 
-if [[ ! -d "$repo_dir" ]]; then
+if [ ! -d "$repo_dir" ]; then
   echo "Error: hax repo not found at $repo_dir, and no hax found in PATH" >&2
 else
   echo "Error: hax build not found at $hax_bin, and no hax found in PATH" >&2
