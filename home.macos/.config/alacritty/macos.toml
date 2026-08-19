@@ -3,6 +3,18 @@ size = 13
 offset.x = 1
 offset.y = 1
 
+[font.normal]
+family = "SauceCodePro Nerd Font"
+style = "Regular"
+
+[font.bold]
+family = "SauceCodePro Nerd Font"
+style = "Bold"
+
+[font.italic]
+family = "SauceCodePro Nerd Font"
+style = "Italic"
+
 [window]
 decorations = "none"
 # Make Option behave as a real Alt/Meta so Alt+hjkl etc. reach tmux and the shell as M-* sequences.
