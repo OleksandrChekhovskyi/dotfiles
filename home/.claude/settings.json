@@ -46,5 +46,6 @@
   "awaySummaryEnabled": false,
   "autoMemoryEnabled": false,
   "autoDreamEnabled": false,
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "tui": "fullscreen"
 }
