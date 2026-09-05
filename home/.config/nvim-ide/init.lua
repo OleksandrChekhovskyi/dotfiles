@@ -1040,7 +1040,9 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- Keep neo-tree git status in sync with gitsigns updates.
+-- Refresh neo-tree's git status for changes its own watchers (.git and expanded
+-- folders) miss. GitSignsUpdate is deliberately not used: it fires on every hunk
+-- recompute while typing, and each GIT_EVENT rescans the tree and reruns git status.
 local git_ui_refresh = vim.api.nvim_create_augroup("nvim-ide-git-ui-refresh", { clear = true })
 local function refresh_git_ui()
   local ok, events = pcall(require, "neo-tree.events")
@@ -1048,9 +1050,17 @@ local function refresh_git_ui()
     events.fire_event(events.GIT_EVENT)
   end
 end
+vim.api.nvim_create_autocmd("BufWritePost", {
+  group = git_ui_refresh,
+  callback = function(event)
+    if vim.b[event.buf].gitsigns_status_dict then -- set only inside a git worktree
+      refresh_git_ui()
+    end
+  end,
+})
 vim.api.nvim_create_autocmd("User", {
   group = git_ui_refresh,
-  pattern = { "GitSignsUpdate", "GitSignsChanged" },
+  pattern = "GitSignsChanged",
   callback = refresh_git_ui,
 })
 vim.api.nvim_create_autocmd("FocusGained", {

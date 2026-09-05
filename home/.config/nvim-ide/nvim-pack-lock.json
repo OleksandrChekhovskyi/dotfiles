@@ -74,7 +74,7 @@
       "src": "https://github.com/nvim-mini/mini.indentscope"
     },
     "neo-tree.nvim": {
-      "rev": "1c6a0deacc110a007a62ef1a35c040d5f0a93f43",
+      "rev": "793467ba36db94b755ec655d1b9fc030573c9724",
       "src": "https://github.com/OleksandrChekhovskyi/neo-tree.nvim",
       "version": "'nvim-ide'"
     },
