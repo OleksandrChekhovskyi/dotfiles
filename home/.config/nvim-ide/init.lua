@@ -548,8 +548,11 @@ vim.cmd("cnoreabbrev <expr> make "
   .. "getcmdtype() == ':' && getcmdline() ==# 'make' ? 'Make' : 'make'")
 
 -- Fuzzy finder
+-- Profile "default" is { "border-fused", "hide" }; "hide" keeps the fzf
+-- process alive (parked) after closing a picker. Use "border-fused" alone
+-- (same UI, no keep-alive) so fzf only runs while a picker is open.
 require("fzf-lua").setup({
-  "default",
+  "border-fused",
   winopts = { height = 0.85, width = 0.80 },
   fzf_opts = {
     ["--tabstop"] = "4",
