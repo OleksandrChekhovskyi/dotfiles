@@ -42,6 +42,8 @@ vim.opt.cursorline = true
 vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 3
+-- Experimental, but sound with UI2 enabled below; mode/search-count show in lualine.
+vim.opt.cmdheight = 0
 vim.opt.fillchars:append({ eob = " " })
 -- Avoid cursor-shaped redraw artifacts with tmux synchronized output on Nvim 0.12.3.
 vim.opt.termsync = false
@@ -118,7 +120,6 @@ local indent_exclude_filetypes = {
   "help",
   "mason",
   "neo-tree",
-  "notify",
   "toggleterm",
   "trouble",
   "render-markdown",
@@ -179,7 +180,6 @@ vim.pack.add({
   "https://github.com/nvim-lua/plenary.nvim",
   "https://github.com/NMAC427/guess-indent.nvim",
   "https://github.com/MunifTanjim/nui.nvim",
-  "https://github.com/rcarriga/nvim-notify",
   "https://github.com/nvim-mini/mini.icons",
   "https://github.com/nvim-mini/mini.bufremove",
   "https://github.com/nvim-mini/mini.indentscope",
@@ -195,7 +195,6 @@ vim.pack.add({
   },
   "https://github.com/akinsho/toggleterm.nvim",
   "https://github.com/stevearc/stickybuf.nvim",
-  "https://github.com/stevearc/overseer.nvim",
   "https://github.com/ibhagwan/fzf-lua",
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/saghen/blink.indent",
@@ -209,7 +208,6 @@ vim.pack.add({
   "https://github.com/windwp/nvim-autopairs",
   "https://github.com/cajames/copy-reference.nvim",
   "https://github.com/folke/which-key.nvim",
-  "https://github.com/folke/noice.nvim",
 })
 
 -- In init.lua, vim.pack.add() registers all plugins first; configure mini.icons
@@ -270,6 +268,9 @@ require("catppuccin").setup({
       ["@markup.raw"] = { fg = colors.lavender },
       ["@markup.raw.block"] = { fg = colors.lavender },
       RenderMarkdownCodeInline = { fg = colors.lavender, bg = colors.mantle },
+      -- UI2's cmdline/spill and pager render with Normal:MsgArea; match the msg
+      -- window bg (NormalFloat). catppuccin omits it for a legacy-grid bug (#17832).
+      MsgArea = { bg = colors.mantle },
     }
   end,
   integrations = {
@@ -280,8 +281,6 @@ require("catppuccin").setup({
     mini = { enabled = true, indentscope_color = "surface2" },
     native_lsp = { enabled = true },
     navic = { enabled = true },
-    noice = true,
-    notify = true,
     which_key = true,
   },
 })
@@ -330,6 +329,7 @@ require("lualine").setup({
       },
     },
     lualine_x = {
+      "searchcount",
       {
         "diagnostics",
         symbols = {
@@ -490,66 +490,6 @@ end
 
 -- Keep special windows pinned to compatible buffers (prevents replacing toggleterm windows)
 require("stickybuf").setup({})
-
--- Task runner
-require("overseer").setup({})
-
-vim.api.nvim_create_user_command("Make", function(params)
-  local cmd, num_subs = vim.o.makeprg:gsub("%$%*", params.args)
-  if num_subs == 0 then
-    cmd = cmd .. " " .. params.args
-  end
-  local notify = require("notify")
-  local notif = notify("Running: " .. cmd, "info", { timeout = false })
-  local task = require("overseer").new_task({
-    cmd = vim.fn.expandcmd(cmd),
-    components = {
-      {
-        "on_output_quickfix",
-        open = false,
-        open_on_match = not params.bang,
-        tail = true,
-      },
-      "on_exit_set_status",
-      { "on_complete_dispose", require_view = { "SUCCESS", "FAILURE" } },
-    },
-  })
-  local function last_output()
-    local bufnr = task:get_bufnr()
-    if bufnr then
-      local lines = require("overseer.util").get_last_output_lines(bufnr, 1)
-      if #lines > 0 then
-        local line = vim.trim(lines[1])
-        if #line > 60 then line = line:sub(1, 57) .. "..." end
-        return line
-      end
-    end
-  end
-  task:subscribe("on_output", function()
-    local line = last_output()
-    if line then
-      notif = notify("Running: " .. cmd .. "\n" .. line, "info", {
-        replace = notif,
-        timeout = false,
-      })
-    end
-  end)
-  task:subscribe("on_complete", function(_, status)
-    local level = status == "SUCCESS" and "info" or "error"
-    local msg = status .. ": " .. cmd
-    local line = last_output()
-    if line then msg = msg .. "\n" .. line end
-    notify(msg, level, { replace = notif, timeout = 1500 })
-  end)
-  task:start()
-end, {
-  desc = "Run your makeprg as an Overseer task",
-  nargs = "*",
-  bang = true,
-})
-
-vim.cmd("cnoreabbrev <expr> make "
-  .. "getcmdtype() == ':' && getcmdline() ==# 'make' ? 'Make' : 'make'")
 
 -- Fuzzy finder
 -- Profile "default" is { "border-fused", "hide" }; "hide" keeps the fzf
@@ -848,30 +788,19 @@ require("which-key").setup({
   },
 })
 
--- Message and cmdline UI with persistent history
-require("notify").setup({
-  timeout = 1500,
-  render = "minimal",
-  stages = "static",
-  minimum_width = 60,
-})
-vim.notify = require("notify")
-
-require("noice").setup({
-  lsp = {
-    progress = { enabled = false },
-  },
-  messages = {
-    view = "mini",
-  },
-  views = {
-    cmdline_popup = {
-      position = {
-        row = 5,
-        col = "50%",
+-- Native messages/cmdline UI (experimental, event-driven). Must be enabled after
+-- a UI attaches; enable() is a no-op before that. The builtin vim.notify writes
+-- to the message history, so notifications land in the msg window and :messages.
+vim.api.nvim_create_autocmd("UIEnter", {
+  once = true,
+  callback = function()
+    require("vim._core.ui2").enable({
+      msg = {
+        targets = "msg",
+        msg = { height = 0.5, timeout = 5000 },
       },
-    },
-  },
+    })
+  end,
 })
 
 --------------------------------------------------------------------------------
@@ -883,7 +812,6 @@ local map = vim.keymap.set
 map({ "n", "i" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
-map("n", "<leader>sm", "<cmd>Noice history<cr>", { desc = "Message history" })
 map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
 map("n", "<leader>uw", "<cmd>setlocal wrap! wrap?<cr>", { desc = "Toggle word wrap" })
 
