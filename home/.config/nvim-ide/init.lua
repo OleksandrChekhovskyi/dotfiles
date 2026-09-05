@@ -199,7 +199,10 @@ vim.pack.add({
   "https://github.com/ibhagwan/fzf-lua",
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/saghen/blink.indent",
-  "https://github.com/sindrets/diffview.nvim",
+  {
+    src = "https://github.com/dlyongemallo/diffview-plus.nvim",
+    name = "diffview.nvim",
+  },
   "https://github.com/lewis6991/gitsigns.nvim",
   "https://github.com/mason-org/mason.nvim",
   "https://github.com/mason-org/mason-lspconfig.nvim",
