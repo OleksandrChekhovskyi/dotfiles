@@ -767,6 +767,12 @@ require("copy-reference").setup({
   use_git_root = true,
 })
 
+-- Keep `gr` terminal so mini.clue executes our references mapping directly.
+for _, lhs in ipairs({ "gra", "gri", "grn", "grr", "grt", "grx" }) do
+  vim.keymap.del("n", lhs)
+end
+vim.keymap.del("x", "gra")
+
 -- Keybinding discovery popup. Mapping descriptions (from vim.keymap.set) are
 -- picked up automatically; clues here only add groups and builtin generators.
 local miniclue = require("mini.clue")
@@ -979,7 +985,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
     lmap("n", "gr", "<cmd>FzfLua lsp_references<cr>", "References")
     lmap("n", "K", vim.lsp.buf.hover, "Hover documentation")
     lmap("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
-    lmap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
+    lmap({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
     if client and client.name == "clangd" then
       lmap(
         "n",
