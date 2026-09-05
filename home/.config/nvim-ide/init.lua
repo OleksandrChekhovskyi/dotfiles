@@ -180,6 +180,7 @@ vim.pack.add({
   "https://github.com/nvim-lua/plenary.nvim",
   "https://github.com/NMAC427/guess-indent.nvim",
   "https://github.com/MunifTanjim/nui.nvim",
+  "https://github.com/nvim-mini/mini.clue",
   "https://github.com/nvim-mini/mini.icons",
   "https://github.com/nvim-mini/mini.bufremove",
   "https://github.com/nvim-mini/mini.indentscope",
@@ -207,7 +208,6 @@ vim.pack.add({
   "https://github.com/MeanderingProgrammer/render-markdown.nvim",
   "https://github.com/windwp/nvim-autopairs",
   "https://github.com/cajames/copy-reference.nvim",
-  "https://github.com/folke/which-key.nvim",
 })
 
 -- In init.lua, vim.pack.add() registers all plugins first; configure mini.icons
@@ -281,7 +281,6 @@ require("catppuccin").setup({
     mini = { enabled = true, indentscope_color = "surface2" },
     native_lsp = { enabled = true },
     navic = { enabled = true },
-    which_key = true,
   },
 })
 vim.cmd.colorscheme("catppuccin-nvim")
@@ -765,26 +764,41 @@ require("copy-reference").setup({
   use_git_root = true,
 })
 
--- Keybinding discovery popup
-require("which-key").setup({
-  preset = "helix",
-  spec = {
-    { "<leader>f", group = "find/file" },
-    { "<leader>c", group = "code" },
-    { "<leader>g", group = "git" },
-    { "<leader>b", group = "buffer" },
-    { "<leader><tab>", group = "tabpage" },
-    { "<leader>s", group = "search" },
-    { "<leader>t", group = "terminal" },
-    { "<leader>u", group = "ui/toggle" },
-    { "<leader>x", group = "diagnostics/quickfix" },
-    { "<leader>w", group = "window", proxy = "<c-w>" },
-    { "<leader>q", group = "quit" },
-    { "<leader>gh", group = "hunks" },
-    { "[", group = "prev" },
-    { "]", group = "next" },
-    { "g", group = "goto" },
-    { "z", group = "fold" },
+-- Keybinding discovery popup. Mapping descriptions (from vim.keymap.set) are
+-- picked up automatically; clues here only add groups and builtin generators.
+local miniclue = require("mini.clue")
+miniclue.setup({
+  triggers = {
+    { mode = "n", keys = "<leader>" },
+    { mode = "x", keys = "<leader>" },
+    { mode = "n", keys = "[" },
+    { mode = "n", keys = "]" },
+    { mode = "n", keys = "g" },
+    { mode = "x", keys = "g" },
+    { mode = "n", keys = "z" },
+    { mode = "x", keys = "z" },
+    { mode = "n", keys = "<C-w>" },
+  },
+  clues = {
+    { mode = "n", keys = "<leader>f", desc = "+find/file" },
+    { mode = "n", keys = "<leader>c", desc = "+code" },
+    { mode = "n", keys = "<leader>g", desc = "+git" },
+    { mode = "n", keys = "<leader>b", desc = "+buffer" },
+    { mode = "n", keys = "<leader><tab>", desc = "+tabpage" },
+    { mode = "n", keys = "<leader>s", desc = "+search" },
+    { mode = "n", keys = "<leader>t", desc = "+terminal" },
+    { mode = "n", keys = "<leader>u", desc = "+ui/toggle" },
+    { mode = "n", keys = "<leader>x", desc = "+diagnostics/quickfix" },
+    { mode = "n", keys = "<leader>q", desc = "+quit" },
+    { mode = "n", keys = "<leader>gh", desc = "+hunks" },
+    miniclue.gen_clues.square_brackets(),
+    miniclue.gen_clues.g(),
+    miniclue.gen_clues.windows(),
+    miniclue.gen_clues.z(),
+  },
+  window = {
+    delay = 300,
+    config = { width = "auto" },
   },
 })
 
