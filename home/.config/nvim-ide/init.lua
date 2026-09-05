@@ -188,7 +188,11 @@ vim.pack.add({
   "https://github.com/justinhj/battery.nvim",
   "https://github.com/nvim-lualine/lualine.nvim",
   "https://github.com/akinsho/bufferline.nvim",
-  "https://github.com/nvim-neo-tree/neo-tree.nvim",
+  {
+    src = "https://github.com/OleksandrChekhovskyi/neo-tree.nvim",
+    name = "neo-tree.nvim",
+    version = "nvim-ide",
+  },
   "https://github.com/akinsho/toggleterm.nvim",
   "https://github.com/stevearc/stickybuf.nvim",
   "https://github.com/stevearc/overseer.nvim",
