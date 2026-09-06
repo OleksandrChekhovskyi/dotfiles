@@ -819,7 +819,12 @@ vim.api.nvim_create_autocmd("UIEnter", {
   callback = function()
     require("vim._core.ui2").enable({
       msg = {
-        targets = "msg",
+        target = "msg",
+        targets = {
+          shell_cmd = "pager",
+          shell_out = "pager",
+          shell_err = "pager",
+        },
         msg = { height = 0.5, timeout = 5000 },
       },
     })
