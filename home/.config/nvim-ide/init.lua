@@ -65,6 +65,9 @@ vim.opt.autoread = true
 -- Spell
 vim.opt.spell = false
 
+-- Clipboard (cutlass keeps deletes and changes from overwriting it)
+vim.opt.clipboard = "unnamedplus"
+
 -- Timing
 vim.opt.updatetime = 250
 vim.opt.timeoutlen = 300
@@ -176,6 +179,7 @@ vim.pack.add({
   { src = "https://github.com/catppuccin/nvim", name = "catppuccin" },
   "https://github.com/nvim-lua/plenary.nvim",
   "https://github.com/NMAC427/guess-indent.nvim",
+  "https://github.com/gbprod/cutlass.nvim",
   "https://github.com/MunifTanjim/nui.nvim",
   "https://github.com/nvim-mini/mini.clue",
   "https://github.com/nvim-mini/mini.icons",
@@ -215,6 +219,9 @@ vim.pack.add({
 -- File icons
 require("mini.icons").setup({})
 MiniIcons.mock_nvim_web_devicons()
+
+-- Delete/change discard; x{motion}, xx, X, and Visual x explicitly cut.
+require("cutlass").setup({ cut_key = "x", override_del = true })
 
 -- Detect indentation from existing buffers when no .editorconfig overrides it.
 require("guess-indent").setup({

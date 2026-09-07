@@ -25,6 +25,10 @@
       "rev": "6b888fa9b280724f79f33c031a2105a962c2014c",
       "src": "https://github.com/cajames/copy-reference.nvim"
     },
+    "cutlass.nvim": {
+      "rev": "d01b5c1943050fcda8edf5c89d4419c41a65890e",
+      "src": "https://github.com/gbprod/cutlass.nvim"
+    },
     "diffview.nvim": {
       "rev": "43e60bca414e4991ed10118e59f809fb03bbeddd",
       "src": "https://github.com/dlyongemallo/diffview-plus.nvim"
