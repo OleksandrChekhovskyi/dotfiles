@@ -11,6 +11,7 @@ set incsearch
 set nowrap
 set number
 set noswapfile
+set autoread
 set fillchars+=vert:│
 syntax on
 

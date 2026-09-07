@@ -9,6 +9,7 @@ set nowrap
 set number
 set spell
 set noswapfile
+set autoread
 syntax on
 
 autocmd FileType * set textwidth=0
