@@ -65,9 +65,6 @@ vim.opt.autoread = true
 -- Spell
 vim.opt.spell = false
 
--- Clipboard
-vim.opt.clipboard = "unnamedplus"
-
 -- Timing
 vim.opt.updatetime = 250
 vim.opt.timeoutlen = 300

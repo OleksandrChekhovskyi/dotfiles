@@ -5,7 +5,6 @@ set noexpandtab
 set textwidth=0
 set wrapmargin=0
 set mouse=a
-set clipboard=unnamedplus
 set nowrap
 set number
 set spell

@@ -6,7 +6,6 @@ set textwidth=0
 set wrapmargin=0
 set mouse=a
 set ttymouse=sgr
-set clipboard=unnamedplus
 set spell
 set incsearch
 set nowrap
