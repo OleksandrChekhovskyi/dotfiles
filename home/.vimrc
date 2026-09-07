@@ -12,6 +12,7 @@ set nowrap
 set number
 set noswapfile
 set autoread
+set ruler
 set fillchars+=vert:│
 syntax on
 

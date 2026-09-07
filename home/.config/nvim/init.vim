@@ -10,6 +10,7 @@ set number
 set spell
 set noswapfile
 set autoread
+set laststatus=1
 syntax on
 
 autocmd FileType * set textwidth=0
