@@ -10,6 +10,11 @@
       "ref": "refs/heads/master",
       "url": "https://github.com/junegunn/fzf.vim"
     },
+    "vim-cutlass": {
+      "commit": "7afd649415541634c8ce317fafbc31cd19d57589",
+      "ref": "refs/heads/master",
+      "url": "https://github.com/svermeulen/vim-cutlass"
+    },
     "vim-fugitive": {
       "commit": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
       "ref": "refs/heads/master",
