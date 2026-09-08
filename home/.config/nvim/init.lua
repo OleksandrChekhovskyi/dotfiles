@@ -1,4 +1,4 @@
--- nvim-ide: standalone Neovim IDE config (NVIM_APPNAME=nvim-ide)
+-- Neovim config
 
 --------------------------------------------------------------------------------
 -- Bootstrap
@@ -10,7 +10,7 @@ vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
 if not vim.pack then
-  error("nvim-ide requires Neovim 0.12+ with built-in vim.pack")
+  error("This config requires Neovim 0.12+ with built-in vim.pack")
 end
 
 --------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ end
 -- This hook is plugin-specific: unlike Mason-managed tools, nvim-treesitter
 -- expects a TSUpdate step after install/update to avoid parser/runtime drift.
 vim.api.nvim_create_autocmd("PackChanged", {
-  group = vim.api.nvim_create_augroup("nvim-ide-pack-hooks", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-pack-hooks", { clear = true }),
   callback = function(event)
     local data = event.data
     if not data or not data.spec or data.spec.name ~= "nvim-treesitter" then
@@ -152,6 +152,7 @@ vim.pack.add({
   {
     src = "https://github.com/OleksandrChekhovskyi/neo-tree.nvim",
     name = "neo-tree.nvim",
+    -- Branch name in the fork, unrelated to this config's name.
     version = "nvim-ide",
   },
   "https://github.com/ibhagwan/fzf-lua",
@@ -207,7 +208,7 @@ local function disable_soft_backspace_for_tab_indent(buf)
 end
 
 vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "BufFilePost", "FileType" }, {
-  group = vim.api.nvim_create_augroup("nvim-ide-tab-indent-backspace", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-tab-indent-backspace", { clear = true }),
   callback = function(event)
     local buf = event.buf
     vim.schedule(function()
@@ -323,7 +324,7 @@ do
   ts.setup()
   ts.install(ensure_installed)
 
-  local ts_hl_group = vim.api.nvim_create_augroup("nvim-ide-treesitter-highlight", { clear = true })
+  local ts_hl_group = vim.api.nvim_create_augroup("nvim-treesitter-highlight", { clear = true })
   vim.api.nvim_create_autocmd("FileType", {
     group = ts_hl_group,
     callback = function(args)
@@ -404,7 +405,7 @@ require("diffview").setup({
 })
 
 vim.api.nvim_create_autocmd("BufEnter", {
-  group = vim.api.nvim_create_augroup("nvim-ide-diffview-buffer", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-diffview-buffer", { clear = true }),
   callback = function(event)
     local name = vim.api.nvim_buf_get_name(event.buf)
     if not name:find("^diffview://") then
@@ -699,7 +700,7 @@ pcall(vim.keymap.del, "x", "gra")
 
 -- LSP keybindings (buffer-local, set via LspAttach)
 vim.api.nvim_create_autocmd("LspAttach", {
-  group = vim.api.nvim_create_augroup("nvim-ide-lsp-attach", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-lsp-attach", { clear = true }),
   callback = function(event)
     local buf = event.buf
     local client = vim.lsp.get_client_by_id(event.data.client_id)
@@ -751,9 +752,18 @@ vim.api.nvim_create_autocmd("LspAttach", {
 -- Autocommands
 --------------------------------------------------------------------------------
 
+-- Never hard-wrap: ftplugins (gitcommit, markdown, ...) and .editorconfig
+-- max_line_length both set textwidth per buffer, so undo it after they run.
+vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
+  group = vim.api.nvim_create_augroup("nvim-no-textwidth", { clear = true }),
+  callback = function()
+    vim.bo.textwidth = 0
+  end,
+})
+
 -- C/C++ indentation tweaks for Vim's built-in cindent engine.
 vim.api.nvim_create_autocmd("FileType", {
-  group = vim.api.nvim_create_augroup("nvim-ide-cpp-indent", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-cpp-indent", { clear = true }),
   pattern = { "c", "cpp" },
   callback = function()
     -- l1: align braces in "case X: {" blocks with the case label.
@@ -771,7 +781,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
 -- Close quickfix / loclist with q
 vim.api.nvim_create_autocmd("FileType", {
-  group = vim.api.nvim_create_augroup("nvim-ide-quickfix-close", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-quickfix-close", { clear = true }),
   pattern = "qf",
   callback = function(event)
     vim.keymap.set("n", "q", "<cmd>close<cr>", { buf = event.buf, silent = true })
@@ -781,7 +791,7 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Auto-reload buffers when external changes are detected.
 -- autoread alone only reloads on :commands; checktime is needed to actually poll.
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
-  group = vim.api.nvim_create_augroup("nvim-ide-auto-reload", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-auto-reload", { clear = true }),
   callback = function()
     if vim.fn.mode() ~= "c" then
       vim.cmd("checktime")
@@ -791,7 +801,7 @@ vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
 
 -- Highlight on yank
 vim.api.nvim_create_autocmd("TextYankPost", {
-  group = vim.api.nvim_create_augroup("nvim-ide-highlight-yank", { clear = true }),
+  group = vim.api.nvim_create_augroup("nvim-highlight-yank", { clear = true }),
   callback = function()
     vim.highlight.on_yank({ higroup = "YankHighlight" })
   end,
