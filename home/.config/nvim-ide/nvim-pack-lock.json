@@ -1,9 +1,5 @@
 {
   "plugins": {
-    "battery.nvim": {
-      "rev": "450e69e704279369192b4905accc49b48a13283a",
-      "src": "https://github.com/justinhj/battery.nvim"
-    },
     "blink.cmp": {
       "rev": "78336bc89ee5365633bcf754d93df01678b5c08f",
       "src": "https://github.com/saghen/blink.cmp",
@@ -45,10 +41,6 @@
       "rev": "84a4987ff36798c2fc1169cbaff67960aed9776f",
       "src": "https://github.com/NMAC427/guess-indent.nvim"
     },
-    "lualine.nvim": {
-      "rev": "221ce6b2d999187044529f49da6554a92f740a96",
-      "src": "https://github.com/nvim-lualine/lualine.nvim"
-    },
     "mason-lspconfig.nvim": {
       "rev": "40276c4df7e6bdce6801d6c035c6227f9115a855",
       "src": "https://github.com/mason-org/mason-lspconfig.nvim"
@@ -64,10 +56,6 @@
     "mini.bufremove": {
       "rev": "281bb1a2c60c3618c854bef2c0933276eb2362c2",
       "src": "https://github.com/nvim-mini/mini.bufremove"
-    },
-    "mini.clue": {
-      "rev": "1c136d62729c8c3b0c2d91379bc37efac15d916e",
-      "src": "https://github.com/nvim-mini/mini.clue"
     },
     "mini.icons": {
       "rev": "98faae31e9be1cc054ae63485e58ceb185efcad0",
@@ -94,10 +82,6 @@
       "rev": "84252f9832fb5b9024fe9f7258e7c2aff915e6fb",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
-    "nvim-navic": {
-      "rev": "455808fd0fae06e6d70fadfd61432275db8f34ce",
-      "src": "https://github.com/SmiteshP/nvim-navic"
-    },
     "nvim-treesitter": {
       "rev": "41416e81a6c7f4af4984395bfe0cd8d174e70976",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter"
@@ -105,18 +89,6 @@
     "plenary.nvim": {
       "rev": "74b06c6c75e4eeb3108ec01852001636d85a932b",
       "src": "https://github.com/nvim-lua/plenary.nvim"
-    },
-    "render-markdown.nvim": {
-      "rev": "4663eb3ecd538bd5062628fb6d95bbe6bdca78f6",
-      "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim"
-    },
-    "stickybuf.nvim": {
-      "rev": "9e00edfd94baef4a78b4248ae8309a2d4943f118",
-      "src": "https://github.com/stevearc/stickybuf.nvim"
-    },
-    "toggleterm.nvim": {
-      "rev": "9a88eae817ef395952e08650b3283726786fb5fb",
-      "src": "https://github.com/akinsho/toggleterm.nvim"
     }
   }
 }

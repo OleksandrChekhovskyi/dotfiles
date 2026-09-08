@@ -5,6 +5,10 @@
 --------------------------------------------------------------------------------
 vim.loader.enable()
 
+-- Prevent netrw loading after Neo-tree setup has cleared its directory autocmds.
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 if not vim.pack then
   error("nvim-ide requires Neovim 0.12+ with built-in vim.pack")
 end
@@ -41,9 +45,7 @@ vim.opt.signcolumn = "yes"
 vim.opt.cursorline = true
 vim.opt.wrap = false
 vim.opt.textwidth = 0
-vim.opt.laststatus = 3
--- Experimental, but sound with UI2 enabled below; mode/search-count show in lualine.
-vim.opt.cmdheight = 0
+vim.opt.laststatus = 1
 vim.opt.fillchars:append({ eob = " " })
 -- Avoid cursor-shaped redraw artifacts with tmux synchronized output on Nvim 0.12.3.
 vim.opt.termsync = false
@@ -77,52 +79,13 @@ vim.opt.diffopt:append("context:10")
 vim.opt.foldminlines = 10
 
 --------------------------------------------------------------------------------
--- Diagnostics
---------------------------------------------------------------------------------
-local diagnostic_icons = {
-  Error = "\xef\x81\x97", -- error circle with X
-  Warn  = "\xef\x81\xb1", -- warning triangle
-  Hint  = "\xef\x83\xab", -- lightbulb hint
-  Info  = "\xef\x81\x9a", -- info circle
-}
-
-vim.diagnostic.config({
-  virtual_text = {
-    prefix = function(diagnostic)
-      local icons = {
-        diagnostic_icons.Error,
-        diagnostic_icons.Warn,
-        diagnostic_icons.Info,
-        diagnostic_icons.Hint,
-      }
-      return icons[diagnostic.severity] or diagnostic_icons.Info
-    end,
-    spacing = 1,
-  },
-  signs = {
-    text = {
-      [vim.diagnostic.severity.ERROR] = diagnostic_icons.Error,
-      [vim.diagnostic.severity.WARN]  = diagnostic_icons.Warn,
-      [vim.diagnostic.severity.HINT]  = diagnostic_icons.Hint,
-      [vim.diagnostic.severity.INFO]  = diagnostic_icons.Info,
-    },
-  },
-})
-
---------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
 local indent_exclude_filetypes = {
-  "Trouble",
-  "alpha",
-  "dashboard",
   "fzf",
   "help",
   "mason",
   "neo-tree",
-  "toggleterm",
-  "trouble",
-  "render-markdown",
 }
 
 --- Check if cursor is inside a comment or string using treesitter highlight captures.
@@ -181,22 +144,16 @@ vim.pack.add({
   "https://github.com/NMAC427/guess-indent.nvim",
   "https://github.com/gbprod/cutlass.nvim",
   "https://github.com/MunifTanjim/nui.nvim",
-  "https://github.com/nvim-mini/mini.clue",
   "https://github.com/nvim-mini/mini.icons",
   "https://github.com/nvim-mini/mini.bufremove",
   "https://github.com/nvim-mini/mini.indentscope",
   "https://github.com/nvim-mini/mini.ai",
-  "https://github.com/SmiteshP/nvim-navic",
-  "https://github.com/justinhj/battery.nvim",
-  "https://github.com/nvim-lualine/lualine.nvim",
   "https://github.com/akinsho/bufferline.nvim",
   {
     src = "https://github.com/OleksandrChekhovskyi/neo-tree.nvim",
     name = "neo-tree.nvim",
     version = "nvim-ide",
   },
-  "https://github.com/akinsho/toggleterm.nvim",
-  "https://github.com/stevearc/stickybuf.nvim",
   "https://github.com/ibhagwan/fzf-lua",
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/saghen/blink.indent",
@@ -209,7 +166,6 @@ vim.pack.add({
   "https://github.com/mason-org/mason-lspconfig.nvim",
   "https://github.com/neovim/nvim-lspconfig",
   { src = "https://github.com/saghen/blink.cmp", version = vim.version.range("1.x") },
-  "https://github.com/MeanderingProgrammer/render-markdown.nvim",
   "https://github.com/windwp/nvim-autopairs",
   "https://github.com/cajames/copy-reference.nvim",
 })
@@ -274,10 +230,6 @@ require("catppuccin").setup({
       MiniIndentscopeSymbol = { fg = colors.surface1 },
       ["@markup.raw"] = { fg = colors.lavender },
       ["@markup.raw.block"] = { fg = colors.lavender },
-      RenderMarkdownCodeInline = { fg = colors.lavender, bg = colors.mantle },
-      -- UI2's cmdline/spill and pager render with Normal:MsgArea; match the msg
-      -- window bg (NormalFloat). catppuccin omits it for a legacy-grid bug (#17832).
-      MsgArea = { bg = colors.mantle },
     }
   end,
   integrations = {
@@ -287,89 +239,9 @@ require("catppuccin").setup({
     neotree = true,
     mini = { enabled = true, indentscope_color = "surface2" },
     native_lsp = { enabled = true },
-    navic = { enabled = true },
   },
 })
 vim.cmd.colorscheme("catppuccin-nvim")
-
--- LSP breadcrumb
-require("nvim-navic").setup({
-  lsp = { auto_attach = true },
-  highlight = true,
-  separator = " ",
-})
-
--- Battery status
--- Prefer sysfs on Linux; acpi can report peripheral batteries as bogus laptop batteries.
-if vim.uv.os_uname().sysname == "Linux" and vim.fn.isdirectory("/sys/class/power_supply") == 1 then
-  require("battery.parsers").parsers.acpi = nil
-end
-
-require("battery").setup({
-  update_rate_seconds = 30,
-  show_status_when_no_battery = false,
-  show_plugged_icon = true,
-  show_unplugged_icon = true,
-  show_percent = true,
-})
-
--- Status line
-require("lualine").setup({
-  options = {
-    theme = "catppuccin-nvim",
-    globalstatus = true,
-    component_separators = { left = "", right = "" },
-    refresh = {
-      refresh_time = 200,
-    },
-  },
-  sections = {
-    lualine_a = { "mode" },
-    lualine_b = { "branch" },
-    lualine_c = {
-      { "filetype", icon_only = true, padding = { left = 1, right = 0 } },
-      { "filename", path = 1 },
-      {
-        function() return require("nvim-navic").get_location() end,
-        cond = function() return require("nvim-navic").is_available() end,
-      },
-    },
-    lualine_x = {
-      "searchcount",
-      {
-        "diagnostics",
-        symbols = {
-          error = diagnostic_icons.Error .. " ",
-          warn  = diagnostic_icons.Warn .. " ",
-          hint  = diagnostic_icons.Hint .. " ",
-          info  = diagnostic_icons.Info .. " ",
-        },
-      },
-      {
-        "diff",
-        source = function()
-          local s = vim.b.gitsigns_status_dict
-          if not s then
-            return nil
-          end
-          return {
-            added = s.added or 0,
-            modified = s.changed or 0,
-            removed = s.removed or 0,
-          }
-        end,
-      },
-    },
-    lualine_y = { "location" },
-    lualine_z = {
-      {
-        function() return require("battery").get_status_line() end,
-        padding = { left = 1, right = 0 },
-      },
-      function() return "\xef\x90\xba " .. os.date("%R") end,
-    },
-  },
-})
 
 -- Buffer removal preserving window layout
 require("mini.bufremove").setup()
@@ -377,10 +249,10 @@ require("mini.bufremove").setup()
 -- Buffer/tab line
 require("bufferline").setup({
   options = {
+    always_show_bufferline = false,
     close_command = "lua MiniBufremove.wipeout(%d, false)",
     right_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
     middle_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
-    diagnostics = "nvim_lsp",
     custom_filter = function(bufnr)
       return vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == ""
     end,
@@ -394,8 +266,9 @@ require("bufferline").setup({
 -- File tree explorer
 require("neo-tree").setup({
   sources = { "filesystem", "buffers", "git_status" },
-  open_files_do_not_replace_types = { "Trouble", "trouble", "qf" },
+  open_files_do_not_replace_types = { "qf" },
   filesystem = {
+    hijack_netrw_behavior = "open_current",
     bind_to_cwd = false,
     follow_current_file = { enabled = true },
     use_libuv_file_watcher = true,
@@ -415,87 +288,8 @@ require("neo-tree").setup({
         unstaged = "",
       },
     },
-    diagnostics = {
-      symbols = {
-        hint = diagnostic_icons.Hint,
-        info = diagnostic_icons.Info,
-        warn = diagnostic_icons.Warn,
-        error = diagnostic_icons.Error,
-      },
-    },
   },
 })
-
--- Integrated terminals
-require("toggleterm").setup({
-  start_in_insert = true,
-  persist_mode = false,
-  auto_scroll = false,
-})
-
-do
-  local Terminal = require("toggleterm.terminal").Terminal
-
-  local bottom_size = function()
-    return 20
-  end
-
-  local side_size = function()
-    return math.max(50, math.floor(vim.o.columns * 0.33))
-  end
-
-  local no_appname = "env -u NVIM_APPNAME "
-  local shell = os.getenv("SHELL") or "bash"
-  local shell_cmd = no_appname .. shell
-  local claude_cmd = no_appname .. "claude --dangerously-skip-permissions"
-  local codex_cmd = no_appname .. "codex --yolo"
-  local hax_cmd = no_appname .. "hax"
-  local opencode_cmd = no_appname .. "opencode"
-
-  local terms = {
-    general  = Terminal:new({ cmd = shell_cmd,    direction = "horizontal" }),
-    side     = Terminal:new({ cmd = shell_cmd,    direction = "vertical"   }),
-    claude   = Terminal:new({ cmd = claude_cmd,   direction = "vertical"   }),
-    codex    = Terminal:new({ cmd = codex_cmd,    direction = "vertical"   }),
-    hax      = Terminal:new({ cmd = hax_cmd,      direction = "vertical"   }),
-    opencode = Terminal:new({ cmd = opencode_cmd, direction = "vertical"   }),
-  }
-
-  local function close_terms(except_name)
-    for name, term in pairs(terms) do
-      if name ~= except_name and term:is_open() then
-        term:close()
-      end
-    end
-  end
-
-  local function toggle_term(name, size_fn)
-    close_terms(name)
-    local size = size_fn and size_fn() or nil
-    terms[name]:toggle(size)
-  end
-
-  local function user_command(name, rhs, desc)
-    pcall(vim.api.nvim_del_user_command, name)
-    vim.api.nvim_create_user_command(name, rhs, { desc = desc })
-  end
-
-  user_command("TermGeneral", function() toggle_term("general", bottom_size) end,
-    "Toggle bottom terminal")
-  user_command("TermSide", function() toggle_term("side", side_size) end,
-    "Toggle general side terminal")
-  user_command("TermClaude", function() toggle_term("claude", side_size) end,
-    "Toggle Claude Code side terminal")
-  user_command("TermCodex", function() toggle_term("codex", side_size) end,
-    "Toggle Codex side terminal")
-  user_command("TermHax", function() toggle_term("hax", side_size) end,
-    "Toggle hax side terminal")
-  user_command("TermOpenCode", function() toggle_term("opencode", side_size) end,
-    "Toggle OpenCode side terminal")
-end
-
--- Keep special windows pinned to compatible buffers (prevents replacing toggleterm windows)
-require("stickybuf").setup({})
 
 -- Fuzzy finder
 -- Profile "default" is { "border-fused", "hide" }; "hide" keeps the fzf
@@ -754,14 +548,6 @@ do
   })
 end
 
--- Markdown rendering (on-demand)
-require("render-markdown").setup({
-  enabled = false,
-  code = { sign = false, width = "block", right_pad = 1 },
-  render_modes = true,
-  anti_conceal = { enabled = false },
-})
-
 -- Auto-close brackets/quotes
 require("nvim-autopairs").setup({ check_ts = true })
 
@@ -769,70 +555,6 @@ require("nvim-autopairs").setup({ check_ts = true })
 require("copy-reference").setup({
   register = "+",
   use_git_root = true,
-})
-
--- Keep `gr` terminal so mini.clue executes our references mapping directly.
-for _, lhs in ipairs({ "gra", "gri", "grn", "grr", "grt", "grx" }) do
-  vim.keymap.del("n", lhs)
-end
-vim.keymap.del("x", "gra")
-
--- Keybinding discovery popup. Mapping descriptions (from vim.keymap.set) are
--- picked up automatically; clues here only add groups and builtin generators.
-local miniclue = require("mini.clue")
-miniclue.setup({
-  triggers = {
-    { mode = "n", keys = "<leader>" },
-    { mode = "x", keys = "<leader>" },
-    { mode = "n", keys = "[" },
-    { mode = "n", keys = "]" },
-    { mode = "n", keys = "g" },
-    { mode = "x", keys = "g" },
-    { mode = "n", keys = "z" },
-    { mode = "x", keys = "z" },
-    { mode = "n", keys = "<C-w>" },
-  },
-  clues = {
-    { mode = "n", keys = "<leader>f", desc = "+find/file" },
-    { mode = "n", keys = "<leader>c", desc = "+code" },
-    { mode = "n", keys = "<leader>g", desc = "+git" },
-    { mode = "n", keys = "<leader>b", desc = "+buffer" },
-    { mode = "n", keys = "<leader><tab>", desc = "+tabpage" },
-    { mode = "n", keys = "<leader>s", desc = "+search" },
-    { mode = "n", keys = "<leader>t", desc = "+terminal" },
-    { mode = "n", keys = "<leader>u", desc = "+ui/toggle" },
-    { mode = "n", keys = "<leader>x", desc = "+diagnostics/quickfix" },
-    { mode = "n", keys = "<leader>q", desc = "+quit" },
-    { mode = "n", keys = "<leader>gh", desc = "+hunks" },
-    miniclue.gen_clues.square_brackets(),
-    miniclue.gen_clues.g(),
-    miniclue.gen_clues.windows(),
-    miniclue.gen_clues.z(),
-  },
-  window = {
-    delay = 300,
-    config = { width = "auto" },
-  },
-})
-
--- Native messages/cmdline UI (experimental, event-driven). Must be enabled after
--- a UI attaches; enable() is a no-op before that. The builtin vim.notify writes
--- to the message history, so notifications land in the msg window and :messages.
-vim.api.nvim_create_autocmd("UIEnter", {
-  once = true,
-  callback = function()
-    require("vim._core.ui2").enable({
-      msg = {
-        target = "msg",
-        targets = {
-          shell_cmd = "pager",
-          shell_out = "pager",
-          shell_err = "pager",
-        },
-        msg = { height = 0.5, timeout = 5000 },
-      },
-    })
-  end,
 })
 
 --------------------------------------------------------------------------------
@@ -891,14 +613,8 @@ map("n", "<C-Down>",  function() resize_win(-2, false) end, { desc = "Decrease w
 map("n", "<C-Left>",  function() resize_win(-2,  true) end, { desc = "Decrease window width"  })
 map("n", "<C-Right>", function() resize_win( 2,  true) end, { desc = "Increase window width"  })
 
--- Integrated terminals
+-- Terminals
 map("t", "<C-\\>", [[<C-\><C-n>]], { desc = "Terminal: exit to normal mode" })
-map("n", "<leader>tt", "<cmd>TermGeneral<cr>", { desc = "Terminal: general (bottom)" })
-map("n", "<leader>ts", "<cmd>TermSide<cr>", { desc = "Terminal: general (side)" })
-map("n", "<leader>tc", "<cmd>TermClaude<cr>", { desc = "Terminal: Claude Code (side)" })
-map("n", "<leader>tx", "<cmd>TermCodex<cr>", { desc = "Terminal: Codex (side)" })
-map("n", "<leader>th", "<cmd>TermHax<cr>", { desc = "Terminal: hax (side)" })
-map("n", "<leader>to", "<cmd>TermOpenCode<cr>", { desc = "Terminal: OpenCode (side)" })
 
 -- Buffer navigation
 map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
@@ -970,12 +686,16 @@ map("n", "<leader>gg", function()
   open_unique_diffview("DiffviewFileHistory")
 end, { desc = "Git log (repo history)" })
 
--- UI toggles
-map("n", "<leader>um", "<cmd>RenderMarkdown toggle<cr>", { desc = "Toggle markdown render" })
-
 -- Copy references
 map({ "n", "v" }, "yr", "<cmd>CopyReference file<cr>", { desc = "Copy file path" })
 map({ "n", "v" }, "yrr", "<cmd>CopyReference line<cr>", { desc = "Copy file:line reference" })
+
+-- Drop the built-in gr* LSP mappings so `gr` below fires without waiting out
+-- 'timeoutlen' for a longer sequence.
+for _, lhs in ipairs({ "gra", "gri", "grn", "grr", "grt", "grx" }) do
+  pcall(vim.keymap.del, "n", lhs)
+end
+pcall(vim.keymap.del, "x", "gra")
 
 -- LSP keybindings (buffer-local, set via LspAttach)
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -1058,34 +778,6 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- Refresh neo-tree's git status for changes its own watchers (.git and expanded
--- folders) miss. GitSignsUpdate is deliberately not used: it fires on every hunk
--- recompute while typing, and each GIT_EVENT rescans the tree and reruns git status.
-local git_ui_refresh = vim.api.nvim_create_augroup("nvim-ide-git-ui-refresh", { clear = true })
-local function refresh_git_ui()
-  local ok, events = pcall(require, "neo-tree.events")
-  if ok then
-    events.fire_event(events.GIT_EVENT)
-  end
-end
-vim.api.nvim_create_autocmd("BufWritePost", {
-  group = git_ui_refresh,
-  callback = function(event)
-    if vim.b[event.buf].gitsigns_status_dict then -- set only inside a git worktree
-      refresh_git_ui()
-    end
-  end,
-})
-vim.api.nvim_create_autocmd("User", {
-  group = git_ui_refresh,
-  pattern = "GitSignsChanged",
-  callback = refresh_git_ui,
-})
-vim.api.nvim_create_autocmd("FocusGained", {
-  group = git_ui_refresh,
-  callback = refresh_git_ui,
-})
-
 -- Auto-reload buffers when external changes are detected.
 -- autoread alone only reloads on :commands; checktime is needed to actually poll.
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
@@ -1102,48 +794,5 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   group = vim.api.nvim_create_augroup("nvim-ide-highlight-yank", { clear = true }),
   callback = function()
     vim.highlight.on_yank({ higroup = "YankHighlight" })
-  end,
-})
-
--- Restore cursor position
-vim.api.nvim_create_autocmd("BufReadPost", {
-  group = vim.api.nvim_create_augroup("nvim-ide-restore-cursor", { clear = true }),
-  callback = function()
-    local mark = vim.api.nvim_buf_get_mark(0, "\"")
-    local line_count = vim.api.nvim_buf_line_count(0)
-    if mark[1] > 0 and mark[1] <= line_count then
-      pcall(vim.api.nvim_win_set_cursor, 0, mark)
-    end
-  end,
-})
-
--- Open an IDE-like layout when starting with a directory: tree left + editor right.
-local function open_ide_layout()
-  local cwd = vim.uv.cwd()
-  require("neo-tree.command").execute({ action = "show", dir = cwd })
-  vim.cmd("wincmd p")
-end
-
-vim.api.nvim_create_autocmd("VimEnter", {
-  group = vim.api.nvim_create_augroup("nvim-ide-startup-layout", { clear = true }),
-  callback = function(data)
-    local argc = vim.fn.argc()
-
-    if argc == 0 then
-      open_ide_layout()
-      return
-    end
-
-    if argc ~= 1 or vim.fn.isdirectory(data.file) ~= 1 then
-      return
-    end
-
-    vim.cmd.cd(data.file)
-    vim.cmd.enew()
-    pcall(function()
-      vim.cmd("bwipeout " .. data.buf)
-    end)
-
-    open_ide_layout()
   end,
 })
