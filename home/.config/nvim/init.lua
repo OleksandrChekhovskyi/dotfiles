@@ -329,7 +329,7 @@ require("diffview").setup({
   enhanced_diff_hl = true,
   show_help_hints = false,
   file_panel = {
-    win_config = { width = 40 },
+    win_config = { position = "bottom", height = 16 },
   },
   hooks = {
     diff_buf_win_enter = function(_, winid)
@@ -370,8 +370,8 @@ vim.api.nvim_create_autocmd("BufEnter", {
       buf = event.buf,
       desc = is_commit_log and "Close commit details" or "Close diffview",
     })
-    vim.keymap.set("n", "]h", "]c", { buf = event.buf, desc = "Next hunk" })
-    vim.keymap.set("n", "[h", "[c", { buf = event.buf, desc = "Previous hunk" })
+    vim.keymap.set("n", "]h", "]c", { buf = event.buf, remap = true, desc = "Next hunk" })
+    vim.keymap.set("n", "[h", "[c", { buf = event.buf, remap = true, desc = "Previous hunk" })
   end,
 })
 
@@ -394,6 +394,10 @@ end
 
 local function open_unique_diffview(command)
   close_existing_diffviews()
+  local layout = vim.o.columns < 120 and "diff1_inline" or "diff2_horizontal"
+  local view_config = require("diffview.config").get_config().view
+  view_config.default.layout = layout
+  view_config.file_history.layout = layout
   vim.cmd(command)
 end
 
