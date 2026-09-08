@@ -9,10 +9,6 @@ vim.loader.enable()
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
-if not vim.pack then
-  error("This config requires Neovim 0.12+ with built-in vim.pack")
-end
-
 --------------------------------------------------------------------------------
 -- Leader keys (must be set before loading plugins)
 --------------------------------------------------------------------------------
@@ -116,64 +112,15 @@ end
 -- Plugins
 --------------------------------------------------------------------------------
 
--- Keep Tree-sitter parsers in sync with plugin updates.
--- This hook is plugin-specific: unlike Mason-managed tools, nvim-treesitter
--- expects a TSUpdate step after install/update to avoid parser/runtime drift.
-vim.api.nvim_create_autocmd("PackChanged", {
-  group = vim.api.nvim_create_augroup("nvim-pack-hooks", { clear = true }),
-  callback = function(event)
-    local data = event.data
-    if not data or not data.spec or data.spec.name ~= "nvim-treesitter" then
-      return
-    end
-    if data.kind ~= "install" and data.kind ~= "update" then
-      return
-    end
-    if not data.active then
-      vim.cmd.packadd("nvim-treesitter")
-    end
-    vim.schedule(function()
-      pcall(vim.cmd, "TSUpdate")
-    end)
-  end,
-})
+-- plugins.py installs the checkouts. Nvim sources "start" packages only after
+-- init.lua, too late for the setup calls below.
+vim.cmd("packloadall!")
 
-vim.pack.add({
-  { src = "https://github.com/catppuccin/nvim", name = "catppuccin" },
-  "https://github.com/nvim-lua/plenary.nvim",
-  "https://github.com/NMAC427/guess-indent.nvim",
-  "https://github.com/gbprod/cutlass.nvim",
-  "https://github.com/MunifTanjim/nui.nvim",
-  "https://github.com/nvim-mini/mini.icons",
-  "https://github.com/nvim-mini/mini.bufremove",
-  "https://github.com/nvim-mini/mini.indentscope",
-  "https://github.com/nvim-mini/mini.ai",
-  "https://github.com/akinsho/bufferline.nvim",
-  {
-    src = "https://github.com/OleksandrChekhovskyi/neo-tree.nvim",
-    name = "neo-tree.nvim",
-    -- Branch name in the fork, unrelated to this config's name.
-    version = "nvim-ide",
-  },
-  "https://github.com/ibhagwan/fzf-lua",
-  "https://github.com/nvim-treesitter/nvim-treesitter",
-  "https://github.com/saghen/blink.indent",
-  {
-    src = "https://github.com/dlyongemallo/diffview-plus.nvim",
-    name = "diffview.nvim",
-  },
-  "https://github.com/lewis6991/gitsigns.nvim",
-  "https://github.com/mason-org/mason.nvim",
-  "https://github.com/mason-org/mason-lspconfig.nvim",
-  "https://github.com/neovim/nvim-lspconfig",
-  { src = "https://github.com/saghen/blink.cmp", version = vim.version.range("1.x") },
-  "https://github.com/windwp/nvim-autopairs",
-  "https://github.com/cajames/copy-reference.nvim",
-})
+if #vim.fn.globpath(vim.o.packpath, "pack/dotfiles/start/*", false, true) == 0 then
+  error("no plugins installed; run ./plugins.py sync nvim in the dotfiles repo")
+end
 
--- In init.lua, vim.pack.add() registers all plugins first; configure mini.icons
--- and install its devicons shim before requiring plugins that consume icons.
--- File icons
+-- File icons; must precede the plugins that consume them.
 require("mini.icons").setup({})
 MiniIcons.mock_nvim_web_devicons()
 
@@ -323,6 +270,10 @@ do
   local ts = require("nvim-treesitter")
   ts.setup()
   ts.install(ensure_installed)
+
+  -- Parsers and their query symlinks live outside the checkout and go stale when
+  -- plugins.py replaces it. No-op otherwise.
+  ts.update()
 
   local ts_hl_group = vim.api.nvim_create_augroup("nvim-treesitter-highlight", { clear = true })
   vim.api.nvim_create_autocmd("FileType", {

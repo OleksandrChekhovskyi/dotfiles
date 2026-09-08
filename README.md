@@ -28,6 +28,9 @@ It requires Python 3.11+ and Git.
 `plugins.json` declares groups, targets, URLs, and branch/tag refs; `plugins.lock` pins exact commits.
 Track both files in Git. Checkouts are installed outside this repository.
 
+Two groups are defined, `vim` and `nvim`. Neither config repeats the plugin list, so a sync is
+enough to make a machine match the checked-in configuration.
+
 ```sh
 ./plugins.py sync vim            # Install locked revisions
 ./plugins.py status --all
@@ -52,6 +55,10 @@ To change a group's target, first empty its repository list and sync at the old 
 the target and restore the list. Targets support `~` and `${XDG_DATA_HOME}` (default `~/.local/share`).
 The optional group setting `"helptags": true` generates help indexes using Vim. Dependencies must be
 listed explicitly; binary installation, submodules, and arbitrary build hooks are not supported.
+
+A repository pinned to a tag ref stays on that tag; bumping it means editing `ref` in the manifest
+rather than running `update`. blink.cmp is pinned this way because it downloads a prebuilt library
+for the release it is checked out at.
 
 ## Tests
 

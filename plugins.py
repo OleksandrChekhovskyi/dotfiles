@@ -161,6 +161,9 @@ def checkout(parent: Path, repo: dict[str, str], commit: str | None) -> tuple[Pa
             raise ValueError(f"requested {commit}, fetched {resolved}")
         git("-c", "core.hooksPath=/dev/null", "checkout", "--quiet", "--detach", resolved,
             cwd=staging)
+        # Shallow fetches store no ref names; plugins that identify their own release
+        # with "git describe" need one.
+        git("update-ref", repo["ref"], resolved, cwd=staging)
         if (staging / ".gitmodules").exists():
             raise ValueError("submodules are not supported")
         return staging, resolved

@@ -229,6 +229,20 @@ class PluginsTest(unittest.TestCase):
         self.assertIn("ok", self.run_tool("status", "vim").stdout)
         self.run_tool("sync", "vim")
 
+    def test_checkout_carries_the_manifest_ref(self) -> None:
+        self.install()
+        checkout = self.target / "sample"
+        self.assertEqual(self.git("rev-parse", "refs/heads/main", cwd=checkout), self.first)
+        second = self.commit("second")
+        self.git("tag", "-a", "v1", "-m", "release")
+        self.groups["vim"]["repos"]["sample"]["ref"] = "refs/tags/v1"
+        self.save_manifest()
+        self.run_tool("update", "vim")
+        self.assertEqual(self.git("rev-parse", "HEAD", cwd=checkout), second)
+        self.assertEqual(self.git("describe", "--tags", "--exact-match", cwd=checkout), "v1")
+        # The recreated ref must not make the checkout look modified.
+        self.assertIn("ok", self.run_tool("status", "vim").stdout)
+
     def test_annotated_tag(self) -> None:
         self.git("tag", "-a", "v1", "-m", "release")
         self.groups["vim"]["repos"]["sample"]["ref"] = "refs/tags/v1"

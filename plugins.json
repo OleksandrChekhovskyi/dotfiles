@@ -33,6 +33,100 @@
           "ref": "refs/heads/main"
         }
       }
+    },
+    "nvim": {
+      "target": "${XDG_DATA_HOME}/nvim/site/pack/dotfiles/start",
+      "helptags": true,
+      "repos": {
+        "catppuccin": {
+          "url": "https://github.com/catppuccin/nvim",
+          "ref": "refs/heads/main"
+        },
+        "plenary.nvim": {
+          "url": "https://github.com/nvim-lua/plenary.nvim",
+          "ref": "refs/heads/master"
+        },
+        "guess-indent.nvim": {
+          "url": "https://github.com/NMAC427/guess-indent.nvim",
+          "ref": "refs/heads/main"
+        },
+        "cutlass.nvim": {
+          "url": "https://github.com/gbprod/cutlass.nvim",
+          "ref": "refs/heads/main"
+        },
+        "nui.nvim": {
+          "url": "https://github.com/MunifTanjim/nui.nvim",
+          "ref": "refs/heads/main"
+        },
+        "mini.icons": {
+          "url": "https://github.com/nvim-mini/mini.icons",
+          "ref": "refs/heads/main"
+        },
+        "mini.bufremove": {
+          "url": "https://github.com/nvim-mini/mini.bufremove",
+          "ref": "refs/heads/main"
+        },
+        "mini.indentscope": {
+          "url": "https://github.com/nvim-mini/mini.indentscope",
+          "ref": "refs/heads/main"
+        },
+        "mini.ai": {
+          "url": "https://github.com/nvim-mini/mini.ai",
+          "ref": "refs/heads/main"
+        },
+        "bufferline.nvim": {
+          "url": "https://github.com/akinsho/bufferline.nvim",
+          "ref": "refs/heads/main"
+        },
+        "neo-tree.nvim": {
+          "url": "https://github.com/OleksandrChekhovskyi/neo-tree.nvim",
+          "ref": "refs/heads/nvim-ide"
+        },
+        "fzf-lua": {
+          "url": "https://github.com/ibhagwan/fzf-lua",
+          "ref": "refs/heads/main"
+        },
+        "nvim-treesitter": {
+          "url": "https://github.com/nvim-treesitter/nvim-treesitter",
+          "ref": "refs/heads/main"
+        },
+        "blink.indent": {
+          "url": "https://github.com/saghen/blink.indent",
+          "ref": "refs/heads/main"
+        },
+        "diffview.nvim": {
+          "url": "https://github.com/dlyongemallo/diffview-plus.nvim",
+          "ref": "refs/heads/main"
+        },
+        "gitsigns.nvim": {
+          "url": "https://github.com/lewis6991/gitsigns.nvim",
+          "ref": "refs/heads/main"
+        },
+        "mason.nvim": {
+          "url": "https://github.com/mason-org/mason.nvim",
+          "ref": "refs/heads/main"
+        },
+        "mason-lspconfig.nvim": {
+          "url": "https://github.com/mason-org/mason-lspconfig.nvim",
+          "ref": "refs/heads/main"
+        },
+        "nvim-lspconfig": {
+          "url": "https://github.com/neovim/nvim-lspconfig",
+          "ref": "refs/heads/master"
+        },
+        "blink.cmp": {
+          "url": "https://github.com/saghen/blink.cmp",
+          "ref": "refs/tags/v1.10.2"
+        },
+        "nvim-autopairs": {
+          "url": "https://github.com/windwp/nvim-autopairs",
+          "ref": "refs/heads/master"
+        },
+        "copy-reference.nvim": {
+          "url": "https://github.com/cajames/copy-reference.nvim",
+          "ref": "refs/heads/main"
+        }
+      }
     }
   }
 }
