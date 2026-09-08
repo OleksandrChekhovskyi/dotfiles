@@ -59,6 +59,8 @@ if has('unnamedplus')
 endif
 
 set diffopt+=context:10
+" Vertical everywhere, so :Gdiffsplit and :Git difftool match :Gvdiffsplit.
+set diffopt+=vertical
 set foldminlines=10
 
 " -----------------------------------------------------------------------------
@@ -101,37 +103,65 @@ function! s:RefreshFugitive() abort
     endfor
 endfunction
 
-" Closes a transient view. Fugitive's summary, pager and blame buffers carry
-" their own gq, which does more than close -- blame restores the window it was
-" opened from -- so defer to it. The lookup is at keypress because packages load
-" after this file. Diff blobs have no gq. bdelete covers the last window, where
-" close raises E444.
+" Closes a transient view in one keypress, diffs included. Fugitive's summary,
+" pager and blame buffers carry their own gq, which does more than close --
+" blame restores the window it was opened from -- so defer to it. The lookup is
+" at keypress because packages load after this file. Diff blobs have no gq.
+" bdelete covers the last window, where close raises E444.
 function! s:CloseView() abort
     if get(maparg('gq', 'n', 0, 1), 'buffer', 0)
         normal gq
         return
     endif
-    let l:on_blob = bufname('%') =~# '^fugitive://'
-    let l:in_diff = &diff
-    if l:in_diff
-        diffoff!
-    endif
-    " From the working-copy side the blob is what should go; a merge has two.
-    if l:in_diff && !l:on_blob
-        for l:nr in range(winnr('$'), 1, -1)
-            if bufname(winbufnr(l:nr)) =~# '^fugitive://'
-                execute l:nr . 'close'
-            endif
-        endfor
-        " Closing another window fires no WinEnter here, so release q now.
-        call s:DiffQuitKey()
+
+    if !&diff
+        if winnr('$') > 1
+            close
+        else
+            bdelete
+        endif
         return
     endif
-    if winnr('$') > 1
-        close
-    else
-        bdelete
+
+    let l:blobs = []
+    let l:copies = []
+    for l:nr in range(1, winnr('$'))
+        if !getwinvar(l:nr, '&diff')
+            continue
+        endif
+        if bufname(winbufnr(l:nr)) =~# '^fugitive://'
+            call add(l:blobs, win_getid(l:nr))
+        else
+            call add(l:copies, win_getid(l:nr))
+        endif
+    endfor
+
+    " Tabs opened for a diff go with it: ours carry the flag, and fugitive's O
+    " and :Git difftool -y leave a tab of nothing but historical blobs.
+    if tabpagenr('$') > 1 && (get(t:, 'vimrc_diff_tab', 0)
+                \ || (empty(l:copies) && len(l:blobs) == winnr('$')))
+        tabclose
+        return
     endif
+
+    " Otherwise every window taking part goes, blobs first so a working copy is
+    " what survives once only one window may remain.
+    diffoff!
+    for l:id in l:blobs + l:copies
+        if winnr('$') > 1 && win_id2win(l:id)
+            execute win_id2win(l:id) . 'close'
+        endif
+    endfor
+    " Closing another window fires no WinEnter here, so release q now.
+    call s:DiffQuitKey()
+endfunction
+
+" Diffs get a tab of their own, so opening one never disturbs the layout you
+" were working in and q can take the whole thing away. The caller runs its diff
+" command afterwards, inside the new tab.
+function! s:DiffTab() abort
+    tab split
+    let t:vimrc_diff_tab = 1
 endfunction
 
 " The working-copy side of a diff is an ordinary buffer, where q must stay the
@@ -231,6 +261,25 @@ augroup vimrc
     autocmd WinEnter,BufEnter * call s:DiffQuitKey()
     " <Esc> is otherwise inert in the command-line window.
     autocmd CmdwinEnter * nnoremap <buffer> <silent> <Esc> :quit<CR>
+
+    " Collapse a commit to one line per file, which fugitive's foldtext renders
+    " as a diffstat. The global foldminlines would leave short diffs expanded.
+    autocmd FileType git setlocal foldmethod=syntax foldlevel=0 foldminlines=0
+
+    " Route fugitive's own diff keys through a fresh tab. The <Plug> targets are
+    " its public interface, and reaching them needs a recursive nmap.
+    autocmd FileType fugitive
+                \ for s:key in ['dd', 'dv', 'ds', 'dh'] |
+                \     execute 'nmap <buffer> <silent>' s:key
+                \         ':<C-u>call <SID>DiffTab()<CR><Plug>fugitive:' . s:key |
+                \ endfor
+    " In a commit, <CR> opens the file in place, which loses the commit itself.
+    " O is the same jump into a new tab. A commit object's name ends at the sha,
+    " which distinguishes it from the log pager and from blobs under it.
+    autocmd FileType git
+                \ if bufname('%') =~# '^fugitive://.*//\x\{40\}$' |
+                \     nmap <buffer> <CR> <Plug>fugitive:O |
+                \ endif
 
     " l1: align braces in "case X: {" with the case label. j1: inline lambdas.
     " (s/u0: indent unclosed parens one shiftwidth. ks: same for conditions.
@@ -354,6 +403,6 @@ nmap <silent> <leader>ghr <Plug>(GitGutterUndoHunk)
 nmap <silent> <leader>ghp <Plug>(GitGutterPreviewHunk)
 nnoremap <silent> <leader>gb :Git blame<CR>
 nnoremap <silent> <leader>gs :Git<CR>
-nnoremap <silent> <leader>gd :Gvdiffsplit<CR>
+nnoremap <silent> <leader>gd :<C-u>call <SID>DiffTab()<Bar>Gvdiffsplit<CR>
 nnoremap <silent> <leader>gf :0Gclog<CR>
 nnoremap <silent> <leader>gg :Git log --oneline<CR>
