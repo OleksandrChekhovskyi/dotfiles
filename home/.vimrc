@@ -60,8 +60,12 @@ if !isdirectory(expand(&undodir))
 endif
 
 " Safe only because cutlass sends deletes and changes to the black hole.
+" unnamedplus needs an X11 or Wayland build; macOS has +clipboard without either,
+" and there * and + are the same pasteboard, so unnamed is equivalent.
 if has('unnamedplus')
     set clipboard=unnamedplus
+elseif has('clipboard')
+    set clipboard=unnamed
 endif
 
 set diffopt+=context:10
