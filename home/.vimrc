@@ -249,6 +249,24 @@ function! s:Reference(lines) range abort
     echo l:ref
 endfunction
 
+" TypeScript 7 is a native binary with its own LSP mode and no tsserver.js, so
+" typescript-language-server cannot drive it; TypeScript 6 and older have no
+" --lsp. Homebrew and Arch both link tsc into the package's bin/, so the version
+" is in the package.json beside it, which costs no process at startup.
+function! s:TypescriptServer() abort
+    let l:tsc = exepath('tsc')
+    if !empty(l:tsc)
+        let l:pkg = fnamemodify(resolve(l:tsc), ':h:h') . '/package.json'
+        if filereadable(l:pkg)
+            let l:ver = get(json_decode(join(readfile(l:pkg), "\n")), 'version', '0')
+            if str2nr(l:ver) >= 7
+                return {'path': 'tsc', 'args': ['--lsp', '--stdio']}
+            endif
+        endif
+    endif
+    return {'path': 'typescript-language-server', 'args': ['--stdio']}
+endfunction
+
 " -----------------------------------------------------------------------------
 " Autocommands
 " -----------------------------------------------------------------------------
@@ -344,7 +362,8 @@ let g:lsp_options = {
 " cargo workspace often sits below the repo root. A trailing slash means
 " finddir(), so .git needs both spellings -- a directory in a clone, a file in
 " a worktree. syncInit, which the plugin recommends for rust-analyzer, blocks
-" Vim until initialize returns: tens of seconds on a large workspace.
+" Vim until initialize returns: tens of seconds on a large workspace. The
+" TypeScript server depends on which TypeScript is installed; see above.
 let g:lsp_servers = [
     \ {
     \   'name': 'clangd',
@@ -361,14 +380,12 @@ let g:lsp_servers = [
     \   'args': ['--stdio'],
     \   'rootSearch': ['pyproject.toml', 'setup.py', 'setup.cfg', '.git/', '.git'],
     \ },
-    \ {
+    \ extend({
     \   'name': 'typescript',
     \   'filetype': ['typescript', 'typescriptreact', 'javascript',
     \                'javascriptreact'],
-    \   'path': 'typescript-language-server',
-    \   'args': ['--stdio'],
     \   'rootSearch': ['.git/', '.git'],
-    \ },
+    \ }, s:TypescriptServer()),
     \ {
     \   'name': 'rust-analyzer',
     \   'filetype': 'rust',
