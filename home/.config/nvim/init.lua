@@ -328,6 +328,14 @@ local diffview_actions = require("diffview.actions")
 require("diffview").setup({
   enhanced_diff_hl = true,
   show_help_hints = false,
+  file_history_panel = {
+    log_options = {
+      git = {
+        single_file = { max_count = 64 },
+        multi_file = { max_count = 64 },
+      },
+    },
+  },
   file_panel = {
     win_config = { position = "bottom", height = 16 },
   },
