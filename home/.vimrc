@@ -264,6 +264,7 @@ augroup vimrc
     " have to be restored on every change.
     autocmd ColorScheme * highlight! link VertSplit Normal
     autocmd ColorScheme * highlight! link VertSplitNC Normal
+    autocmd ColorScheme * highlight! link gitLogDecoration Special
 
     " autoread only reloads on :commands; checktime is what polls. Skip the
     " cmdline, and the command-line window, which reports normal mode here
@@ -283,6 +284,8 @@ augroup vimrc
     " Collapse a commit to one line per file, which fugitive's foldtext renders
     " as a diffstat. The global foldminlines would leave short diffs expanded.
     autocmd FileType git setlocal foldmethod=syntax foldlevel=0 foldminlines=0
+    " The stock git syntax colors oneline hashes, but not ref decorations.
+    autocmd FileType git syntax match gitLogDecoration /\%(^\x\{7,\} \)\@<=([^)]*)/
 
     " Route fugitive's own diff keys through a fresh tab. The <Plug> targets are
     " its public interface, and reaching them needs a recursive nmap.
@@ -502,4 +505,6 @@ nnoremap <silent> <leader>gb :Git blame<CR>
 nnoremap <silent> <leader>gs :Git<CR>
 nnoremap <silent> <leader>gd :<C-u>call <SID>DiffTab()<Bar>Gvdiffsplit<CR>
 nnoremap <silent> <leader>gf :0Gclog<CR>
-nnoremap <silent> <leader>gg :Git log --oneline<CR>
+" Default to 200 commits; 1000<leader>gg requests more.
+nnoremap <silent> <leader>gg :<C-u>execute
+            \ 'Git log --oneline --decorate=short -n ' . (v:count ? v:count : 200)<CR>
