@@ -20,6 +20,47 @@ Existing files move to `~/.dotfiles-backup/<timestamp>/`; reruns skip correct sy
 
 For example, `home.freebsd/.config/example` overrides `home/.config/example` on FreeBSD.
 
+## Plugin dependencies
+
+`plugins.py` manages external Git repositories separately from `install.sh`, which stays offline.
+It requires Python 3.11+ and Git.
+
+`plugins.json` declares groups, targets, URLs, and branch/tag refs; `plugins.lock` pins exact commits.
+Track both files in Git. Checkouts are installed outside this repository.
+
+```sh
+./plugins.py sync vim            # Install locked revisions
+./plugins.py status --all
+./plugins.py sync --all --dry-run
+./plugins.py update vim fzf.vim   # Update one dependency and its lock entry
+./plugins.py update vim          # Update the whole group
+./plugins.py sync --all          # Also clean up removed dependencies/groups
+./plugins.py gc --dry-run
+./plugins.py gc                  # Confirm permanent deletion of quarantined checkouts
+```
+
+To add a dependency, edit the manifest and run `update GROUP NAME`. To remove one, delete its
+manifest entry and run `sync GROUP`. Sync never selects newer revisions; missing or stale pins
+require an explicit update.
+
+Ownership records and quarantine live under `${XDG_STATE_HOME:-~/.local/state}/dotfiles/plugins/`.
+Keep this state: existing directories cannot be adopted without it. Unknown paths, changed origins,
+and local edits in retained checkouts are refused. Removed and replaced checkouts are quarantined,
+not deleted, until `gc` is confirmed.
+
+To change a group's target, first empty its repository list and sync at the old target, then change
+the target and restore the list. Targets support `~` and `${XDG_DATA_HOME}` (default `~/.local/share`).
+The optional group setting `"helptags": true` generates help indexes using Vim. Dependencies must be
+listed explicitly; binary installation, submodules, and arbitrary build hooks are not supported.
+
+## Tests
+
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+The Python tests use only temporary local Git repositories and never modify installed plugins.
+
 ## Shell setup
 
 The shell files are split by responsibility:

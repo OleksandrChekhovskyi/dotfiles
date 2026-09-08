@@ -1,0 +1,30 @@
+{
+  "groups": {
+    "vim": {
+      "target": "~/.vim/pack/dotfiles/start",
+      "helptags": true,
+      "repos": {
+        "fzf": {
+          "url": "https://github.com/junegunn/fzf",
+          "ref": "refs/heads/master"
+        },
+        "fzf.vim": {
+          "url": "https://github.com/junegunn/fzf.vim",
+          "ref": "refs/heads/master"
+        },
+        "vim-sleuth": {
+          "url": "https://github.com/tpope/vim-sleuth",
+          "ref": "refs/heads/master"
+        },
+        "vim-fugitive": {
+          "url": "https://github.com/tpope/vim-fugitive",
+          "ref": "refs/heads/master"
+        },
+        "vim-gitgutter": {
+          "url": "https://github.com/airblade/vim-gitgutter",
+          "ref": "refs/heads/main"
+        }
+      }
+    }
+  }
+}

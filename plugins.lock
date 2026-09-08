@@ -1,0 +1,29 @@
+{
+  "vim": {
+    "fzf": {
+      "commit": "ad151d84154632a6abec67b40fe326c1ea2c9481",
+      "ref": "refs/heads/master",
+      "url": "https://github.com/junegunn/fzf"
+    },
+    "fzf.vim": {
+      "commit": "8a0068127ac9ee23d71dab2944ce995726bef462",
+      "ref": "refs/heads/master",
+      "url": "https://github.com/junegunn/fzf.vim"
+    },
+    "vim-fugitive": {
+      "commit": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
+      "ref": "refs/heads/master",
+      "url": "https://github.com/tpope/vim-fugitive"
+    },
+    "vim-gitgutter": {
+      "commit": "90b75207bd9b55d8ac4af15f72b4e935462014d0",
+      "ref": "refs/heads/main",
+      "url": "https://github.com/airblade/vim-gitgutter"
+    },
+    "vim-sleuth": {
+      "commit": "be69bff86754b1aa5adcbb527d7fcd1635a84080",
+      "ref": "refs/heads/master",
+      "url": "https://github.com/tpope/vim-sleuth"
+    }
+  }
+}
