@@ -10,6 +10,11 @@
       "ref": "refs/heads/master",
       "url": "https://github.com/junegunn/fzf.vim"
     },
+    "lsp": {
+      "commit": "58eac06e81bad174cfa897614ae01adf0d31d10a",
+      "ref": "refs/heads/main",
+      "url": "https://github.com/yegappan/lsp"
+    },
     "vim-cutlass": {
       "commit": "7afd649415541634c8ce317fafbc31cd19d57589",
       "ref": "refs/heads/master",

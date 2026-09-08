@@ -20,6 +20,12 @@ set cursorline
 set nowrap
 set ruler
 set display=truncate
+" Context around the cursor: without it a jump to a definition or reference
+" lands on the last visible line. sidescroll=1 scrolls a column at a time
+" instead of the default half screen, which 'nowrap' makes reachable.
+set scrolloff=5
+set sidescrolloff=8
+set sidescroll=1
 set splitbelow
 set splitright
 set fillchars+=vert:│
@@ -207,6 +213,18 @@ function! s:ToggleQuickfix() abort
     botright copen
 endfunction
 
+" A location list belongs to one window, so the getwininfo() scan used above
+" would also match a list belonging to some other window.
+function! s:ToggleLoclist() abort
+    if getloclist(0, {'winid': 0}).winid
+        lclose
+    elseif empty(getloclist(0))
+        echo 'No location list'
+    else
+        lopen
+    endif
+endfunction
+
 " File location for sharing, relative to the git work tree so it means the same
 " in another checkout, or to the working directory outside one. 5yrr spans a
 " range of lines.
@@ -309,6 +327,53 @@ endif
 
 let g:gitgutter_map_keys = 0
 
+" Read when the package loads, which is after this file. Servers come from the
+" system, so ignoreMissingServer keeps a machine without one quiet.
+let g:lsp_options = {
+    \ 'ignoreMissingServer': v:true,
+    \ 'usePopupInCodeAction': v:true,
+    \ 'completionMatcher': 'fuzzy',
+    \ 'noNewlineInCompletion': v:true,
+    \ }
+
+" rootSearch finds the workspace root, nearest match winning: a per-package
+" tsconfig would start a server per package and lose cross-package jumps, and a
+" cargo workspace often sits below the repo root. A trailing slash means
+" finddir(), so .git needs both spellings -- a directory in a clone, a file in
+" a worktree. syncInit, which the plugin recommends for rust-analyzer, blocks
+" Vim until initialize returns: tens of seconds on a large workspace.
+let g:lsp_servers = [
+    \ {
+    \   'name': 'clangd',
+    \   'filetype': ['c', 'cpp'],
+    \   'path': 'clangd',
+    \   'args': ['--background-index'],
+    \   'rootSearch': ['compile_commands.json', 'compile_flags.txt', '.clangd',
+    \                  '.git/', '.git'],
+    \ },
+    \ {
+    \   'name': 'pyright',
+    \   'filetype': 'python',
+    \   'path': 'pyright-langserver',
+    \   'args': ['--stdio'],
+    \   'rootSearch': ['pyproject.toml', 'setup.py', 'setup.cfg', '.git/', '.git'],
+    \ },
+    \ {
+    \   'name': 'typescript',
+    \   'filetype': ['typescript', 'typescriptreact', 'javascript',
+    \                'javascriptreact'],
+    \   'path': 'typescript-language-server',
+    \   'args': ['--stdio'],
+    \   'rootSearch': ['.git/', '.git'],
+    \ },
+    \ {
+    \   'name': 'rust-analyzer',
+    \   'filetype': 'rust',
+    \   'path': 'rust-analyzer',
+    \   'rootSearch': ['Cargo.toml'],
+    \ },
+    \ ]
+
 " -----------------------------------------------------------------------------
 " Mappings
 " -----------------------------------------------------------------------------
@@ -322,9 +387,9 @@ nnoremap q <Nop>
 nnoremap Q q
 
 " cutlass sends c, d, s and friends to the black hole, leaving x as the explicit
-" cut, as in nvim-ide. noremap reaches the real operators, and defining them
-" here claims the keys before cutlass loads, which skips keys already mapped.
-" Single characters go with dl.
+" cut. noremap reaches the real operators, and defining them here claims the
+" keys before cutlass loads, which skips keys already mapped. Single characters
+" go with dl.
 nnoremap x d
 xnoremap x d
 nnoremap xx dd
@@ -336,6 +401,15 @@ nnoremap <silent> <Esc> :nohlsearch<CR>
 nnoremap <silent> <leader>qq :qa<CR>
 nnoremap <silent> <leader>us :setlocal spell! spell?<CR>
 nnoremap <silent> <leader>uw :setlocal wrap! wrap?<CR>
+
+" Completion
+" 'noselect' leaves nothing highlighted until you move, so a first Tab has to
+" both pick the top entry and accept it. noNewlineInCompletion then leaves <CR>
+" a plain newline rather than a second accept key.
+inoremap <expr> <Tab> pumvisible()
+            \ ? (complete_info(['selected']).selected >= 0 ? "\<C-y>" : "\<C-n>\<C-y>")
+            \ : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 
 " Windows
 nnoremap <C-h> <C-w>h
@@ -368,10 +442,13 @@ nnoremap <silent> <leader><tab>l :tablast<CR>
 nnoremap <silent> [t :tabprevious<CR>
 nnoremap <silent> ]t :tabnext<CR>
 
-" Quickfix
+" Quickfix and location list; LSP references and diagnostics land in the latter.
 nnoremap <silent> [q :cprevious<CR>
 nnoremap <silent> ]q :cnext<CR>
 nnoremap <silent> <leader>xq :<C-u>call <SID>ToggleQuickfix()<CR>
+nnoremap <silent> [l :lprevious<CR>
+nnoremap <silent> ]l :lnext<CR>
+nnoremap <silent> <leader>xl :<C-u>call <SID>ToggleLoclist()<CR>
 
 " References
 nnoremap <silent> yr :call <SID>Reference(0)<CR>
@@ -380,6 +457,26 @@ nnoremap <silent> yrr :call <SID>Reference(1)<CR>
 " r that replaces a character.
 xnoremap <silent> yr :call <SID>Reference(0)<CR>
 xnoremap <silent> yrr :call <SID>Reference(1)<CR>
+
+" LSP. Unconditional rather than bound once a server attaches, which can take
+" seconds on a large workspace; with no server the commands only warn. There is
+" no severity-filtered pair to go with [d/]d, as :LspDiag takes no filter.
+nnoremap <silent> gd :LspGotoDefinition<CR>
+nnoremap <silent> gD :LspGotoDeclaration<CR>
+nnoremap <silent> gI :LspGotoImpl<CR>
+nnoremap <silent> gy :LspGotoTypeDef<CR>
+nnoremap <silent> gr :LspShowReferences<CR>
+nnoremap <silent> K :LspHover<CR>
+nnoremap <silent> [d :LspDiag prev<CR>
+nnoremap <silent> ]d :LspDiag next<CR>
+nnoremap <silent> <leader>cd :LspDiag current<CR>
+nnoremap <silent> <leader>xd :LspDiag show<CR>
+nnoremap <silent> <leader>cr :LspRename<CR>
+nnoremap <silent> <leader>ca :LspCodeAction<CR>
+xnoremap <silent> <leader>ca :LspCodeAction<CR>
+nnoremap <silent> <leader>uh :LspInlayHints toggle<CR>
+" A clangd extension; the other servers just warn.
+nnoremap <silent> <leader>ch :LspSwitchSourceHeader<CR>
 
 " Find
 nnoremap <silent> <leader><space> :Files<CR>

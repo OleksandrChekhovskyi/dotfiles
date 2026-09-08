@@ -20,6 +20,10 @@
           "url": "https://github.com/svermeulen/vim-cutlass",
           "ref": "refs/heads/master"
         },
+        "lsp": {
+          "url": "https://github.com/yegappan/lsp",
+          "ref": "refs/heads/main"
+        },
         "vim-fugitive": {
           "url": "https://github.com/tpope/vim-fugitive",
           "ref": "refs/heads/master"
