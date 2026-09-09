@@ -43,6 +43,8 @@ vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 1
 vim.opt.fillchars:append({ eob = " " })
+vim.opt.scrolloff = 5
+vim.opt.sidescrolloff = 8
 -- Avoid cursor-shaped redraw artifacts with tmux synchronized output on Nvim 0.12.3.
 vim.opt.termsync = false
 
