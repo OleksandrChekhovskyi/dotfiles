@@ -1,0 +1,10 @@
+[flags]
+basic = true
+disable_gpu = true
+
+[processes]
+default_tree = true
+hide_k_threads = true
+process_command = true
+default_memory_value = true
+default_sort = "mem"
