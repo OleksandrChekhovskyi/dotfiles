@@ -82,7 +82,6 @@ vim.opt.foldminlines = 10
 local indent_exclude_filetypes = {
   "fzf",
   "help",
-  "mason",
   "neo-tree",
 }
 
@@ -431,13 +430,6 @@ require("gitsigns").setup({
   end,
 })
 
--- LSP: mason + mason-lspconfig + lspconfig
-require("mason").setup({})
-require("mason-lspconfig").setup({
-  ensure_installed = { "lua_ls" },
-  automatic_enable = true,
-})
-
 -- Autocompletion
 require("blink.cmp").setup({
   keymap = {
@@ -471,26 +463,37 @@ require("blink.cmp").setup({
   sources = { default = { "lsp", "path", "snippets", "buffer" } },
 })
 
+-- LSP servers come from the system, never from Neovim. nvim-lspconfig stays on
+-- the runtimepath only for its lsp/*.lua definitions, which vim.lsp.config()
+-- merges by name. An uninstalled server fails cmd validation and is skipped
+-- silently, so one list works on every machine.
+
+-- TypeScript 7 is a native binary with a built-in --lsp mode and no tsserver.js
+-- for typescript-language-server to drive; 6 and older have no --lsp. Homebrew and
+-- Arch both link tsc into the package's bin/, so the version is readable from the
+-- package.json beside it, without paying a node startup for --version.
+local function typescript_server()
+  local tsc = vim.fn.exepath("tsc")
+  if tsc == "" then
+    return "ts_ls"
+  end
+  local prefix = vim.fs.dirname(vim.fs.dirname(vim.fn.resolve(tsc)))
+  local read_ok, lines = pcall(vim.fn.readfile, vim.fs.joinpath(prefix, "package.json"))
+  if not read_ok then
+    return "ts_ls"
+  end
+  local decode_ok, pkg = pcall(vim.json.decode, table.concat(lines, "\n"))
+  if not decode_ok or type(pkg) ~= "table" or type(pkg.version) ~= "string" then
+    return "ts_ls"
+  end
+  local version = vim.version.parse(pkg.version)
+  return version and version.major >= 7 and "tsc" or "ts_ls"
+end
+
 do
-  local capabilities = require("blink.cmp").get_lsp_capabilities()
+  vim.lsp.config("*", { capabilities = require("blink.cmp").get_lsp_capabilities() })
 
-  vim.lsp.config("*", { capabilities = capabilities })
-
-  vim.lsp.config("vtsls", {
-    root_dir = function(bufnr, on_dir)
-      local util = require("lspconfig.util")
-      local ts_root = util.root_pattern("tsconfig.json")
-      local fallback_root = util.root_pattern("package.json", "jsconfig.json")
-
-      local fname = vim.api.nvim_buf_get_name(bufnr)
-      local startpath = vim.fs.dirname(fname)
-      local git_dir = startpath and vim.fs.find(".git", { path = startpath, upward = true })[1]
-      local git_root = git_dir and vim.fs.dirname(git_dir)
-      local root = git_root or ts_root(fname) or fallback_root(fname)
-      return root and on_dir(root)
-    end,
-  })
-
+  -- Resolve vim.* and plugin modules; upstream lua_ls sets no workspace library.
   vim.lsp.config("lua_ls", {
     settings = {
       Lua = {
@@ -500,6 +503,14 @@ do
         },
       },
     },
+  })
+
+  vim.lsp.enable({
+    "clangd",
+    "lua_ls",
+    "pyright",
+    "rust_analyzer",
+    typescript_server(),
   })
 end
 

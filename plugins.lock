@@ -50,16 +50,6 @@
       "ref": "refs/heads/main",
       "url": "https://github.com/NMAC427/guess-indent.nvim"
     },
-    "mason-lspconfig.nvim": {
-      "commit": "5d32a9b8de9f90466797a740edb0fb4b3c27e423",
-      "ref": "refs/heads/main",
-      "url": "https://github.com/mason-org/mason-lspconfig.nvim"
-    },
-    "mason.nvim": {
-      "commit": "2a6940af80375532e5e9e7c1f2fc6319a1b7a69d",
-      "ref": "refs/heads/main",
-      "url": "https://github.com/mason-org/mason.nvim"
-    },
     "mini.ai": {
       "commit": "cb02c5444613475b7edf0c8dc98264c1c857aa6e",
       "ref": "refs/heads/main",

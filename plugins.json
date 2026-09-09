@@ -102,14 +102,6 @@
           "url": "https://github.com/lewis6991/gitsigns.nvim",
           "ref": "refs/heads/main"
         },
-        "mason.nvim": {
-          "url": "https://github.com/mason-org/mason.nvim",
-          "ref": "refs/heads/main"
-        },
-        "mason-lspconfig.nvim": {
-          "url": "https://github.com/mason-org/mason-lspconfig.nvim",
-          "ref": "refs/heads/main"
-        },
         "nvim-lspconfig": {
           "url": "https://github.com/neovim/nvim-lspconfig",
           "ref": "refs/heads/master"
