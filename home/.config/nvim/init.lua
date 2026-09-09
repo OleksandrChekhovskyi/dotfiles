@@ -518,10 +518,46 @@ end
 -- Auto-close brackets/quotes
 require("nvim-autopairs").setup({ check_ts = true })
 
--- Copy file and line references (useful for sharing exact code locations)
-require("copy-reference").setup({
-  register = "+",
-  use_git_root = true,
+-- File location for sharing, relative to the git work tree so it means the same
+-- in another checkout, or to the working directory outside one.
+local function copy_reference(with_lines, line1, line2)
+  local file = vim.api.nvim_buf_get_name(0)
+  if file == "" then
+    return
+  end
+
+  local ref = vim.fn.fnamemodify(file, ":.")
+  local root = vim.system({
+    "git",
+    "-C",
+    vim.fs.dirname(file),
+    "rev-parse",
+    "--show-toplevel",
+  }, { text = true }):wait()
+  if root.code == 0 then
+    local prefix = vim.trim(root.stdout) .. "/"
+    if vim.startswith(file, prefix) then
+      ref = file:sub(#prefix + 1)
+    end
+  end
+
+  if with_lines then
+    ref = ref .. ":" .. line1 .. (line1 == line2 and "" or "-" .. line2)
+  end
+
+  vim.fn.setreg("+", ref)
+  vim.api.nvim_echo({ { ref } }, false, {})
+end
+
+vim.api.nvim_create_user_command("CopyReference", function(cmd)
+  copy_reference(cmd.args ~= "file", cmd.line1, cmd.line2)
+end, {
+  range = true,
+  nargs = "?",
+  complete = function()
+    return { "file", "line" }
+  end,
+  desc = "Copy the current file reference, with line numbers unless given \"file\"",
 })
 
 --------------------------------------------------------------------------------
@@ -661,8 +697,8 @@ map("n", "<leader>gg", function()
 end, { desc = "Git log (repo history)" })
 
 -- Copy references
-map({ "n", "v" }, "yr", "<cmd>CopyReference file<cr>", { desc = "Copy file path" })
-map({ "n", "v" }, "yrr", "<cmd>CopyReference line<cr>", { desc = "Copy file:line reference" })
+map({ "n", "x" }, "yr", ":CopyReference file<cr>", { silent = true, desc = "Copy file path" })
+map({ "n", "x" }, "yrr", ":CopyReference<cr>", { silent = true, desc = "Copy file:line reference" })
 
 -- Drop the built-in gr* LSP mappings so `gr` below fires without waiting out
 -- 'timeoutlen' for a longer sequence.

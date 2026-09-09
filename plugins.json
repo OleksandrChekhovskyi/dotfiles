@@ -113,10 +113,6 @@
         "nvim-autopairs": {
           "url": "https://github.com/windwp/nvim-autopairs",
           "ref": "refs/heads/master"
-        },
-        "copy-reference.nvim": {
-          "url": "https://github.com/cajames/copy-reference.nvim",
-          "ref": "refs/heads/main"
         }
       }
     }

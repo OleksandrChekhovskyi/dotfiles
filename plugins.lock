@@ -20,11 +20,6 @@
       "ref": "refs/heads/main",
       "url": "https://github.com/catppuccin/nvim"
     },
-    "copy-reference.nvim": {
-      "commit": "6b888fa9b280724f79f33c031a2105a962c2014c",
-      "ref": "refs/heads/main",
-      "url": "https://github.com/cajames/copy-reference.nvim"
-    },
     "cutlass.nvim": {
       "commit": "d01b5c1943050fcda8edf5c89d4419c41a65890e",
       "ref": "refs/heads/main",
