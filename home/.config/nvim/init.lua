@@ -258,6 +258,7 @@ require("fzf-lua").setup({
     rg_opts = "--column --line-number --no-heading --color=always "
       .. "--smart-case --max-columns=4096 --trim -e",
   },
+  lsp = { multiline = 1, trim_entry = true },
 })
 
 -- Treesitter (native TS highlighting)
