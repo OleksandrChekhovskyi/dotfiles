@@ -66,10 +66,6 @@
           "url": "https://github.com/nvim-mini/mini.bufremove",
           "ref": "refs/heads/main"
         },
-        "mini.indentscope": {
-          "url": "https://github.com/nvim-mini/mini.indentscope",
-          "ref": "refs/heads/main"
-        },
         "mini.ai": {
           "url": "https://github.com/nvim-mini/mini.ai",
           "ref": "refs/heads/main"

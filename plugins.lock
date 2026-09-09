@@ -60,11 +60,6 @@
       "ref": "refs/heads/main",
       "url": "https://github.com/nvim-mini/mini.icons"
     },
-    "mini.indentscope": {
-      "commit": "92fbaf895f83c59575ec599df532b297ebf62b14",
-      "ref": "refs/heads/main",
-      "url": "https://github.com/nvim-mini/mini.indentscope"
-    },
     "neo-tree.nvim": {
       "commit": "793467ba36db94b755ec655d1b9fc030573c9724",
       "ref": "refs/heads/nvim-ide",

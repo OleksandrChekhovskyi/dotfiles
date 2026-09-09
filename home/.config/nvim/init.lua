@@ -176,7 +176,7 @@ require("catppuccin").setup({
       DiffText = { bg = "#4d4632" },
       YankHighlight = { bg = colors.surface2 },
       BlinkIndent = { fg = colors.surface0 },
-      MiniIndentscopeSymbol = { fg = colors.surface1 },
+      BlinkIndentScope = { fg = colors.surface1 },
       ["@markup.raw"] = { fg = colors.lavender },
       ["@markup.raw.block"] = { fg = colors.lavender },
     }
@@ -186,7 +186,7 @@ require("catppuccin").setup({
     diffview = true,
     gitsigns = true,
     neotree = true,
-    mini = { enabled = true, indentscope_color = "surface2" },
+    mini = { enabled = true },
     native_lsp = { enabled = true },
   },
 })
@@ -275,7 +275,7 @@ do
   })
 end
 
--- Indent guides (static only — scope is handled by mini.indentscope)
+-- Indent guides + active scope
 require("blink.indent").setup({
   blocked = {
     buftypes = { include_defaults = true },
@@ -289,25 +289,12 @@ require("blink.indent").setup({
     char = "\xe2\x94\x82",
     highlights = { "BlinkIndent" },
   },
-  scope = { enabled = false },
+  scope = {
+    enabled = true,
+    char = "\xe2\x94\x82",
+    highlights = { "BlinkIndentScope" },
+  },
 })
-
--- Active indent scope (debounced to avoid treesitter rehighlight storms on scroll)
-do
-  local opts = {
-    symbol = "\xe2\x94\x82",
-    options = { try_as_border = true },
-    draw = { delay = 200 },
-  }
-
-  local mis = require("mini.indentscope")
-  opts.draw.animation = mis.gen_animation.none()
-  mis.setup(opts)
-  vim.api.nvim_create_autocmd("FileType", {
-    pattern = indent_exclude_filetypes,
-    callback = function() vim.b.miniindentscope_disable = true end,
-  })
-end
 
 -- Textobjects for arguments, function calls, quotes, brackets, and more
 require("mini.ai").setup({
