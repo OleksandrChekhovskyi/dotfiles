@@ -1,5 +1,27 @@
 #!/usr/bin/env python3
-"""Reconcile named groups of pinned Git repositories (Python 3.11+, Unix)."""
+"""Reconcile named groups of pinned Git repositories (Python 3.11+, Unix).
+
+Requires Git. plugins.json declares groups, each with a target directory and a list of
+repositories given as a URL and a branch or tag ref; plugins.lock pins every repository to
+an exact commit. Track both files in Git. Targets support ~ and ${XDG_DATA_HOME} (default
+~/.local/share), and the optional group setting "helptags": true builds help indexes with Vim.
+
+sync installs the locked commits and never selects newer ones, so a missing or stale pin
+requires an explicit update. Add a repository by editing the manifest and running
+update GROUP NAME; remove one by deleting its entry and running sync GROUP. A repository
+pinned to a tag ref stays on that tag, so bumping it means editing ref in the manifest rather
+than running update. blink.cmp is pinned this way because it downloads a prebuilt library for
+the release it is checked out at. Changing a group's target means emptying its repository list
+and syncing at the old target first, then restoring the list under the new one.
+
+Ownership records and quarantine live under ${XDG_STATE_HOME:-~/.local/state}/dotfiles/plugins.
+Keep that state: existing directories cannot be adopted without it. Unknown paths, changed
+origins, and local edits in retained checkouts are refused. Replaced and removed checkouts are
+quarantined rather than deleted until gc is confirmed.
+
+Dependencies must be listed explicitly. Submodules, binary installation, and build hooks are
+not supported; treesitter.py builds Neovim's parsers from the checkout this script installs.
+"""
 
 from __future__ import annotations
 
@@ -307,7 +329,8 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--manifest", type=Path, default=ROOT / "plugins.json")
     parser.add_argument("--lockfile", type=Path, default=ROOT / "plugins.lock")
     parser.add_argument("--state-dir", type=Path, default=Path(

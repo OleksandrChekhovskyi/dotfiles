@@ -1,0 +1,25 @@
+{
+  "install_dir": "${XDG_DATA_HOME}/nvim/site",
+  "source": "${XDG_DATA_HOME}/nvim/site/pack/dotfiles/start/nvim-treesitter",
+  "languages": [
+    "bash",
+    "c",
+    "cpp",
+    "css",
+    "go",
+    "html",
+    "javascript",
+    "json",
+    "lua",
+    "markdown",
+    "markdown_inline",
+    "python",
+    "rust",
+    "toml",
+    "tsx",
+    "typescript",
+    "vim",
+    "vimdoc",
+    "yaml"
+  ]
+}

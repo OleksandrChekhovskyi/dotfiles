@@ -8,6 +8,8 @@ Personal dotfiles managed via symlinks.
 - `home.macos/` — macOS overlay; files override or add to `home/` on macOS
 - `home.linux/`, `home.freebsd/`, `home.openbsd/` — optional OS overlays
 - `install.sh` — creates symlinks and backs up files under `~/.dotfiles-backup/<timestamp>/`
+- `plugins.py` / `plugins.json` / `plugins.lock` — pinned Vim and Neovim plugin checkouts
+- `treesitter.py` / `treesitter.json` — Tree-sitter parsers and queries built for Neovim
 - `~/.profile.local` — machine-specific environment and secrets (not tracked)
 - `~/.bashrc.local` — machine-specific Bash interactive config (not tracked)
 

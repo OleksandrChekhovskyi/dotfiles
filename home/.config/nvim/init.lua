@@ -261,22 +261,11 @@ require("fzf-lua").setup({
   },
 })
 
--- Treesitter (parser installation + native TS highlighting)
+-- Treesitter (native TS highlighting)
+-- Parsers and queries are built by treesitter.json/treesitter.py in the dotfiles
+-- repository, not installed from here. nvim-treesitter stays on the runtimepath only
+-- for its grammar table, query files, and filetype aliases.
 do
-  local ensure_installed = {
-    "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml",
-    "markdown", "markdown_inline", "python", "javascript", "typescript", "tsx",
-    "html", "css", "go", "rust", "c", "cpp",
-  }
-
-  local ts = require("nvim-treesitter")
-  ts.setup()
-  ts.install(ensure_installed)
-
-  -- Parsers and their query symlinks live outside the checkout and go stale when
-  -- plugins.py replaces it. No-op otherwise.
-  ts.update()
-
   local ts_hl_group = vim.api.nvim_create_augroup("nvim-treesitter-highlight", { clear = true })
   vim.api.nvim_create_autocmd("FileType", {
     group = ts_hl_group,

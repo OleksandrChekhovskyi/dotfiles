@@ -20,45 +20,32 @@ Existing files move to `~/.dotfiles-backup/<timestamp>/`; reruns skip correct sy
 
 For example, `home.freebsd/.config/example` overrides `home/.config/example` on FreeBSD.
 
-## Plugin dependencies
+## Plugins and parsers
 
-`plugins.py` manages external Git repositories separately from `install.sh`, which stays offline.
-It requires Python 3.11+ and Git.
+Editor plugins and Neovim's Tree-sitter parsers are installed outside this repository by two
+scripts. Both need the network, so `install.sh` never runs them and stays offline. Both reconcile
+what is on disk against a tracked JSON manifest, and neither editor repeats the list in its own
+config, so a sync is enough to make a machine match the checked-in configuration.
 
-`plugins.json` declares groups, targets, URLs, and branch/tag refs; `plugins.lock` pins exact commits.
-Track both files in Git. Checkouts are installed outside this repository.
-
-Two groups are defined, `vim` and `nvim`. Neither config repeats the plugin list, so a sync is
-enough to make a machine match the checked-in configuration.
+- `plugins.py` checks out pinned Git repositories into the Vim and Neovim package directories.
+  `plugins.json` declares groups, targets, and branch/tag refs; `plugins.lock` pins exact commits.
+  Two groups are defined, `vim` and `nvim`.
+- `treesitter.py` builds Neovim's Tree-sitter parsers and installs their queries.
+  `treesitter.json` lists the languages. Revisions and query files come from the pinned
+  `nvim-treesitter` checkout, so `plugins.lock` pins the parsers too.
 
 ```sh
-./plugins.py sync vim            # Install locked revisions
-./plugins.py status --all
-./plugins.py sync --all --dry-run
-./plugins.py update vim fzf.vim   # Update one dependency and its lock entry
-./plugins.py update vim          # Update the whole group
-./plugins.py sync --all          # Also clean up removed dependencies/groups
-./plugins.py gc --dry-run
-./plugins.py gc                  # Confirm permanent deletion of quarantined checkouts
+./plugins.py sync --all             # Install the locked revisions, drop removed ones
+./plugins.py update nvim fzf-lua    # Bump one plugin and its lock entry
+./treesitter.py sync                # Rebuild parsers that moved, drop unpinned ones
 ```
 
-To add a dependency, edit the manifest and run `update GROUP NAME`. To remove one, delete its
-manifest entry and run `sync GROUP`. Sync never selects newer revisions; missing or stale pins
-require an explicit update.
+To set up or update a machine, run `./install.sh` and then those two syncs, `treesitter.py` last:
+parsers do not follow an `nvim-treesitter` bump on their own. Both scripts accept `status` and
+`--dry-run`. Track `plugins.json`, `plugins.lock`, and `treesitter.json` in Git.
 
-Ownership records and quarantine live under `${XDG_STATE_HOME:-~/.local/state}/dotfiles/plugins/`.
-Keep this state: existing directories cannot be adopted without it. Unknown paths, changed origins,
-and local edits in retained checkouts are refused. Removed and replaced checkouts are quarantined,
-not deleted, until `gc` is confirmed.
-
-To change a group's target, first empty its repository list and sync at the old target, then change
-the target and restore the list. Targets support `~` and `${XDG_DATA_HOME}` (default `~/.local/share`).
-The optional group setting `"helptags": true` generates help indexes using Vim. Dependencies must be
-listed explicitly; binary installation, submodules, and arbitrary build hooks are not supported.
-
-A repository pinned to a tag ref stays on that tag; bumping it means editing `ref` in the manifest
-rather than running `update`. blink.cmp is pinned this way because it downloads a prebuilt library
-for the release it is checked out at.
+Each script's header comment is the reference for its manifest format, update workflow, and how it
+handles removals, state, and failures. `--help` prints it.
 
 ## Tests
 
@@ -66,7 +53,8 @@ for the release it is checked out at.
 python3 -m unittest discover -s tests -v
 ```
 
-The Python tests use only temporary local Git repositories and never modify installed plugins.
+The Python tests use only temporary local Git repositories and stub checkouts. They never modify
+installed plugins or parsers, and never use the network.
 
 ## Shell setup
 
