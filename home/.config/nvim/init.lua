@@ -533,6 +533,13 @@ map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
 map("n", "<leader>uw", "<cmd>setlocal wrap! wrap?<cr>", { desc = "Toggle word wrap" })
 
+-- A stray q must not start recording, and nothing else may start with q: a
+-- mapping like q: would make every buffer-local close below wait out
+-- 'timeoutlen', so the cmdline window stays on 'cedit' (CTRL-F). Recording goes
+-- to <leader>Q, since Nvim 0.13 gives Q and gQ to multicursor.
+map("n", "q", "<Nop>", { desc = "Unused (q closes windows)" })
+map("n", "<leader>Q", "q", { desc = "Record macro into register" })
+
 -- Diagnostics / quickfix
 map("n", "<leader>xd", vim.diagnostic.setqflist, { desc = "Diagnostics to quickfix" })
 map("n", "<leader>xq", function()
@@ -661,55 +668,62 @@ for _, lhs in ipairs({ "gra", "gri", "grn", "grr", "grt", "grx" }) do
 end
 pcall(vim.keymap.del, "x", "gra")
 
--- LSP keybindings (buffer-local, set via LspAttach)
-vim.api.nvim_create_autocmd("LspAttach", {
-  group = vim.api.nvim_create_augroup("nvim-lsp-attach", { clear = true }),
-  callback = function(event)
-    local buf = event.buf
-    local client = vim.lsp.get_client_by_id(event.data.client_id)
-    local lmap = function(mode, l, r, desc)
-      vim.keymap.set(mode, l, r, { buf = buf, desc = desc })
+-- LSP, mapped unconditionally rather than on LspAttach: a server can take
+-- seconds to start, and until then these keys would fall through to unrelated
+-- defaults, gd to a local declaration jump, K to 'keywordprg'. `filter` says
+-- which client must be attached: name for a server-specific command, method
+-- for a capability.
+local function lsp_action(fn, filter)
+  return function()
+    local buf = vim.api.nvim_get_current_buf()
+    local clients = vim.lsp.get_clients(vim.tbl_extend("keep", { bufnr = buf }, filter or {}))
+    if not next(clients) then
+      local what = filter and filter.name and (filter.name .. " is not attached to this buffer")
+        or filter and filter.method and ("No LSP client here supports " .. filter.method)
+        or "No LSP client attached to this buffer"
+      vim.notify(what, vim.log.levels.WARN)
+      return
     end
+    fn()
+  end
+end
 
-    lmap("n", "gd", vim.lsp.buf.definition, "Go to definition")
-    lmap("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
-    lmap("n", "gI", vim.lsp.buf.implementation, "Go to implementation")
-    lmap("n", "gy", vim.lsp.buf.type_definition, "Go to type definition")
-    lmap("n", "gr", "<cmd>FzfLua lsp_references<cr>", "References")
-    lmap("n", "K", vim.lsp.buf.hover, "Hover documentation")
-    lmap("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
-    lmap({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-    if client and client.name == "clangd" then
-      lmap(
-        "n",
-        "<leader>ch",
-        "<cmd>LspClangdSwitchSourceHeader<cr>",
-        "Switch Source/Header (C/C++)"
-      )
-    end
-    if client and vim.lsp.inlay_hint and client:supports_method("textDocument/inlayHint", buf) then
-      lmap("n", "<leader>uh", function()
-        local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = buf })
-        vim.lsp.inlay_hint.enable(not enabled, { bufnr = buf })
-      end, "Toggle inlay hints")
-    end
-    lmap("n", "<leader>cd", vim.diagnostic.open_float, "Line diagnostics")
-    lmap("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
-    lmap("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
-    lmap("n", "[e", function()
-      vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR })
-    end, "Previous error")
-    lmap("n", "]e", function()
-      vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR })
-    end, "Next error")
-    lmap("n", "[w", function()
-      vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.WARN })
-    end, "Previous warning")
-    lmap("n", "]w", function()
-      vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.WARN })
-    end, "Next warning")
-  end,
-})
+map("n", "gd", lsp_action(vim.lsp.buf.definition), { desc = "Go to definition" })
+map("n", "gD", lsp_action(vim.lsp.buf.declaration), { desc = "Go to declaration" })
+map("n", "gI", lsp_action(vim.lsp.buf.implementation), { desc = "Go to implementation" })
+map("n", "gy", lsp_action(vim.lsp.buf.type_definition), { desc = "Go to type definition" })
+map("n", "gr", lsp_action(function()
+  vim.cmd("FzfLua lsp_references")
+end), { desc = "References" })
+map("n", "K", lsp_action(vim.lsp.buf.hover), { desc = "Hover documentation" })
+map("n", "<leader>cr", lsp_action(vim.lsp.buf.rename), { desc = "Rename symbol" })
+map({ "n", "x" }, "<leader>ca", lsp_action(vim.lsp.buf.code_action), { desc = "Code action" })
+-- A clangd extension; the command exists only while clangd is attached.
+map("n", "<leader>ch", lsp_action(function()
+  vim.cmd("LspClangdSwitchSourceHeader")
+end, { name = "clangd" }), { desc = "Switch Source/Header (C/C++)" })
+map("n", "<leader>uh", lsp_action(function()
+  local buf = vim.api.nvim_get_current_buf()
+  local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = buf })
+  vim.lsp.inlay_hint.enable(not enabled, { bufnr = buf })
+end, { method = "textDocument/inlayHint" }), { desc = "Toggle inlay hints" })
+
+-- Unguarded: diagnostics also come from sources other than LSP.
+map("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
+map("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, { desc = "Previous diagnostic" })
+map("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, { desc = "Next diagnostic" })
+map("n", "[e", function()
+  vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR })
+end, { desc = "Previous error" })
+map("n", "]e", function()
+  vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR })
+end, { desc = "Next error" })
+map("n", "[w", function()
+  vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.WARN })
+end, { desc = "Previous warning" })
+map("n", "]w", function()
+  vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.WARN })
+end, { desc = "Next warning" })
 
 --------------------------------------------------------------------------------
 -- Autocommands
@@ -742,12 +756,15 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- Close quickfix / loclist with q
+-- Close read-only views with q. bdelete covers the last window, where close
+-- raises E444.
 vim.api.nvim_create_autocmd("FileType", {
-  group = vim.api.nvim_create_augroup("nvim-quickfix-close", { clear = true }),
-  pattern = "qf",
+  group = vim.api.nvim_create_augroup("nvim-close-view", { clear = true }),
+  pattern = { "qf", "help", "man", "checkhealth" },
   callback = function(event)
-    vim.keymap.set("n", "q", "<cmd>close<cr>", { buf = event.buf, silent = true })
+    vim.keymap.set("n", "q", function()
+      vim.cmd(vim.fn.winnr("$") > 1 and "close" or "bdelete")
+    end, { buf = event.buf, silent = true, desc = "Close window" })
   end,
 })
 
