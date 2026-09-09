@@ -168,10 +168,19 @@ vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "BufFilePost", "FileT
 -- Color scheme
 require("catppuccin").setup({
   flavour = "mocha",
+  color_overrides = {
+    mocha = {
+      base = "#181825",
+      mantle = "#11111b",
+      crust = "#0b0b12",
+    },
+  },
   no_italic = true,
   custom_highlights = function(colors)
     return {
       Folded = { bg = colors.surface0, fg = colors.overlay0 },
+      FzfLuaBorder = { fg = colors.surface2, bg = colors.base },
+      MsgArea = { fg = colors.text, bg = colors.crust },
       DiffChange = { bg = "#3a3529" },
       DiffText = { bg = "#4d4632" },
       YankHighlight = { bg = colors.surface2 },
