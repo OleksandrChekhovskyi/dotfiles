@@ -47,15 +47,6 @@ parsers do not follow an `nvim-treesitter` bump on their own. Both scripts accep
 Each script's header comment is the reference for its manifest format, update workflow, and how it
 handles removals, state, and failures. `--help` prints it.
 
-## Tests
-
-```sh
-python3 -m unittest discover -s tests -v
-```
-
-The Python tests use only temporary local Git repositories and stub checkouts. They never modify
-installed plugins or parsers, and never use the network.
-
 ## Shell setup
 
 The shell files are split by responsibility:
