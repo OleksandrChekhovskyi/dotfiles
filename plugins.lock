@@ -70,11 +70,6 @@
       "ref": "refs/heads/main",
       "url": "https://github.com/MunifTanjim/nui.nvim"
     },
-    "nvim-autopairs": {
-      "commit": "430522f95fe4fb7c511ec64f8c1a90cc6a66c05c",
-      "ref": "refs/heads/master",
-      "url": "https://github.com/windwp/nvim-autopairs"
-    },
     "nvim-lspconfig": {
       "commit": "19576de1c1b6d1b5e231ea6ef9cba9a811c322bb",
       "ref": "refs/heads/master",

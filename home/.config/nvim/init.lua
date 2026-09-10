@@ -511,9 +511,6 @@ do
   })
 end
 
--- Auto-close brackets/quotes
-require("nvim-autopairs").setup({ check_ts = true })
-
 -- File location for sharing, relative to the git work tree so it means the same
 -- in another checkout, or to the working directory outside one.
 local function copy_reference(with_lines, line1, line2)
