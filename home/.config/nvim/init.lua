@@ -253,6 +253,7 @@ require("neo-tree").setup({
 -- Profile "default" is { "border-fused", "hide" }; "hide" keeps the fzf
 -- process alive (parked) after closing a picker. Use "border-fused" alone
 -- (same UI, no keep-alive) so fzf only runs while a picker is open.
+local fzf_actions = require("fzf-lua.actions")
 require("fzf-lua").setup({
   "border-fused",
   winopts = { height = 0.85, width = 0.80 },
@@ -262,12 +263,26 @@ require("fzf-lua").setup({
   files = {
     cwd_prompt = false,
   },
+  -- The "files" picker searches hidden files by default, "grep" does not, which
+  -- hides whole trees such as ~/.config. Setting "hidden" (rather than passing
+  -- --hidden in rg_opts) keeps the toggle and its header label in sync.
   grep = {
     multiline = 1,
+    hidden = true,
     rg_opts = "--column --line-number --no-heading --color=always "
-      .. "--smart-case --max-columns=4096 --trim -e",
+      .. '--smart-case --max-columns=4096 --trim -g "!.git" -g "!.jj" -e',
   },
   lsp = { multiline = 1, trim_entry = true },
+  -- tmux binds Alt+hjkl to pane switching without a prefix, so fzf never sees
+  -- <A-h>; move "toggle hidden files" to <A-.> ("dot files"). The leading true
+  -- inherits the remaining default file actions instead of replacing them.
+  actions = {
+    files = {
+      true,
+      ["alt-h"] = false,
+      ["alt-."] = { fn = fzf_actions.toggle_hidden, reuse = true, header = false },
+    },
+  },
 })
 
 -- Treesitter (native TS highlighting)
