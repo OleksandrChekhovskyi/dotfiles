@@ -22,7 +22,7 @@
       "model": "gpt-5.6-luna",
       "effort": "max"
     },
-    "deepseek": {
+    "ds": {
       "tint": "sage",
       "provider": "opencode-go",
       "model": "deepseek-v4.1-flash",
