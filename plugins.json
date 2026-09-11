@@ -86,6 +86,10 @@
           "url": "https://github.com/nvim-treesitter/nvim-treesitter",
           "ref": "refs/heads/main"
         },
+        "nvim-treesitter-textobjects": {
+          "url": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects",
+          "ref": "refs/heads/main"
+        },
         "blink.indent": {
           "url": "https://github.com/saghen/blink.indent",
           "ref": "refs/heads/main"

@@ -80,6 +80,11 @@
       "ref": "refs/heads/main",
       "url": "https://github.com/nvim-treesitter/nvim-treesitter"
     },
+    "nvim-treesitter-textobjects": {
+      "commit": "5c7b0263797dfd1bd6202f2b219f3b53a80b2187",
+      "ref": "refs/heads/main",
+      "url": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"
+    },
     "plenary.nvim": {
       "commit": "74b06c6c75e4eeb3108ec01852001636d85a932b",
       "ref": "refs/heads/master",

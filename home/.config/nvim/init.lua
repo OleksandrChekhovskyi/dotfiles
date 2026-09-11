@@ -321,10 +321,32 @@ require("blink.indent").setup({
   },
 })
 
--- Textobjects for arguments, function calls, quotes, brackets, and more
-require("mini.ai").setup({
-  n_lines = 500,
-})
+-- Textobjects for arguments, function calls, quotes, brackets, and more.
+-- The treesitter-backed ones read queries/<lang>/textobjects.scm, supplied by
+-- nvim-treesitter-textobjects. That plugin stays on the runtimepath for its queries alone;
+-- its own select/swap/move modules are never set up, so it adds no mappings of its own.
+do
+  local ai = require("mini.ai")
+  local ts = ai.gen_spec.treesitter
+
+  ai.setup({
+    n_lines = 500,
+    custom_textobjects = {
+      -- Definitions, not calls: `dif` clears a function body, `vac` selects a whole class.
+      f = ts({ a = "@function.outer", i = "@function.inner" }),
+      c = ts({ a = "@class.outer", i = "@class.inner" }),
+      -- Any enclosing block: plain block, conditional, or loop, whichever matches best.
+      o = ts({
+        a = { "@block.outer", "@conditional.outer", "@loop.outer" },
+        i = { "@block.inner", "@conditional.inner", "@loop.inner" },
+      }),
+      -- Usages, i.e. what builtin `f` meant before it was rebound above.
+      u = ai.gen_spec.function_call(),
+      U = ai.gen_spec.function_call({ name_pattern = "[%w_]" }),
+      d = { "%f[%d]%d+" },
+    },
+  })
+end
 
 -- Git diff viewer
 local diffview_actions = require("diffview.actions")
