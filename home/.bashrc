@@ -17,4 +17,6 @@ PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"  # Flush after e
 bind -x '"\C-l":printf "\e[H\e[2J\e[3J"'
 
 # Source machine-local config (not tracked in git)
-[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"
+if [ -f "$HOME/.bashrc.local" ]; then
+    . "$HOME/.bashrc.local"
+fi

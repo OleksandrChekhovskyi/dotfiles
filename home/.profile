@@ -6,4 +6,6 @@ export PATH="$HOME/.local/bin:$PATH"
 ENV=$HOME/.shrc
 export ENV
 
-[ -f "$HOME/.profile.local" ] && . "$HOME/.profile.local"
+if [ -f "$HOME/.profile.local" ]; then
+    . "$HOME/.profile.local"
+fi
