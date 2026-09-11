@@ -125,8 +125,9 @@ end
 require("mini.icons").setup({})
 MiniIcons.mock_nvim_web_devicons()
 
--- Delete/change discard; x{motion}, xx, X, and Visual x explicitly cut.
-require("cutlass").setup({ cut_key = "x", override_del = true })
+-- Delete/change discard; m is the explicit cut. Cut sits on m, not x, so that
+-- cutlass keeps x and X as single-character deletes into the black hole.
+require("cutlass").setup({ cut_key = "m", override_del = true })
 
 -- Detect indentation from existing buffers when no .editorconfig overrides it.
 require("guess-indent").setup({
@@ -586,6 +587,10 @@ map("n", "<leader>uw", "<cmd>setlocal wrap! wrap?<cr>", { desc = "Toggle word wr
 -- to <leader>Q, since Nvim 0.13 gives Q and gQ to multicursor.
 map("n", "q", "<Nop>", { desc = "Unused (q closes windows)" })
 map("n", "<leader>Q", "q", { desc = "Record macro into register" })
+
+-- cutlass takes m for cut, so marks move here. Nothing else may start with gm,
+-- or every mark would wait out 'timeoutlen'.
+map("n", "gm", "m", { desc = "Set mark" })
 
 -- Diagnostics / quickfix
 map("n", "<leader>xd", vim.diagnostic.setqflist, { desc = "Diagnostics to quickfix" })

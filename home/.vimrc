@@ -410,16 +410,20 @@ let mapleader = ' '
 nnoremap q <Nop>
 nnoremap Q q
 
-" cutlass sends c, d, s and friends to the black hole, leaving x as the explicit
-" cut. noremap reaches the real operators, and defining them here claims the
-" keys before cutlass loads, which skips keys already mapped. Single characters
-" go with dl.
-nnoremap x d
-xnoremap x d
-nnoremap xx dd
-nnoremap X D
+" cutlass sends c, d, s and friends to the black hole, leaving m as the explicit
+" cut, and noremap reaches the real operators. x and X stay unmapped so that
+" cutlass, which loads after this file and skips mapped keys, claims them as
+" "_x and "_X.
+nnoremap m d
+xnoremap m d
+nnoremap mm dd
+nnoremap M D
 nnoremap <Del> "_x
 xnoremap <Del> "_d
+
+" cutlass takes m for cut, so marks move here. Nothing else may start with gm,
+" or every mark would wait out 'timeoutlen'.
+nnoremap gm m
 
 nnoremap <silent> <Esc> :nohlsearch<CR>
 nnoremap <silent> <leader>qq :qa<CR>
