@@ -19,6 +19,13 @@ Keep that state: existing directories cannot be adopted without it. Unknown path
 origins, and local edits in retained checkouts are refused. Replaced and removed checkouts are
 quarantined rather than deleted until gc is confirmed.
 
+link GROUP NAME PATH replaces a checkout with a symlink to an existing clone of the same origin,
+so a fork can be developed in place and loaded by the editor without a push. Links are recorded
+in the state directory, never in the manifest, because the path is machine-specific. Linked
+clones are left alone by sync: their contents are yours, not this script's. update still resolves
+the pin from the remote, so bumping the lock means pushing first; it reports when the linked
+clone sits elsewhere. unlink GROUP NAME drops the symlink, and the next sync restores the pin.
+
 Dependencies must be listed explicitly. Submodules, binary installation, and build hooks are
 not supported; treesitter.py builds Neovim's parsers from the checkout this script installs.
 """
@@ -138,13 +145,21 @@ def process_lock(path: Path) -> Iterator[None]:
 
 def inspect(path: Path, owner: dict[str, str]) -> tuple[str, bool]:
     if path.is_symlink() or not (path / ".git").is_dir():
-        raise ValueError(f"not a managed Git checkout: {path}")
-    if git("remote", "get-url", "origin", cwd=path) != owner["url"]:
+        raise ValueError(f"not a Git checkout: {path}")
+    # Clones made by hand commonly carry the .git suffix a manifest URL omits.
+    if (git("remote", "get-url", "origin", cwd=path).removesuffix(".git")
+            != owner["url"].removesuffix(".git")):
         raise ValueError(f"origin changed: {path}")
     head = git("rev-parse", "HEAD", cwd=path)
     # Ignored build artifacts survive replacement in quarantine too.
     dirty = bool(git("status", "--porcelain", "--untracked-files=all", cwd=path))
     return head, dirty
+
+
+def inspect_link(path: Path, source: str, repo: dict[str, str]) -> tuple[str, bool]:
+    if not path.is_symlink() or path.resolve() != Path(source):
+        raise ValueError(f"not a link to {source}: {path}")
+    return inspect(Path(source), repo)
 
 
 def quarantine(path: Path, state_dir: Path) -> None:
@@ -194,11 +209,74 @@ def checkout(parent: Path, repo: dict[str, str], commit: str | None) -> tuple[Pa
         raise
 
 
+def links(state_dir: Path) -> dict[str, dict[str, str]]:
+    records = read_json(state_dir / "links.json")
+    for group, entries in records.items():
+        if not NAME.fullmatch(group) or not isinstance(entries, dict):
+            raise ValueError(f"invalid link record: {group}")
+        for name, source in entries.items():
+            if (not NAME.fullmatch(name) or not isinstance(source, str)
+                    or not Path(source).is_absolute()):
+                raise ValueError(f"invalid link record: {group}/{name}")
+    return records
+
+
+def link(args: argparse.Namespace, state_dir: Path) -> None:
+    spec = manifest(args.manifest).get(args.group)
+    if not spec or args.name not in spec["repos"]:
+        raise ValueError(f"unknown repository: {args.group}/{args.name}")
+    if not args.path:
+        raise ValueError("link requires the path of an existing clone")
+    repo = spec["repos"][args.name]
+    source = Path(args.path).expanduser().resolve()
+    target = expand_target(spec["target"])
+    if target == source or target in source.parents:
+        raise ValueError(f"clone must live outside {target}")
+    inspect(source, repo)
+    state_path = state_dir / "installed.json"
+    state = read_json(state_path)
+    owners = state.get(args.group, {}).get("repos", {})
+    path = target / args.name
+    if path.is_symlink():
+        path.unlink()
+    elif path.exists():
+        if args.name not in owners:
+            raise ValueError(f"{path}: unowned path")
+        quarantine(path, state_dir)
+    # Drop ownership before the symlink exists, so an interrupted run leaves nothing adopted.
+    owners.pop(args.name, None)
+    write_json(state_path, state)
+    target.mkdir(parents=True, exist_ok=True)
+    path.symlink_to(source)
+    records = links(state_dir)
+    records.setdefault(args.group, {})[args.name] = str(source)
+    write_json(state_dir / "links.json", records)
+    print(f"link {args.group}/{args.name} -> {source}")
+
+
+def unlink(args: argparse.Namespace, state_dir: Path) -> None:
+    spec = manifest(args.manifest).get(args.group)
+    if not spec:
+        raise ValueError(f"unknown group: {args.group}")
+    records = links(state_dir)
+    if args.name not in records.get(args.group, {}):
+        raise ValueError(f"not linked: {args.group}/{args.name}")
+    path = expand_target(spec["target"]) / args.name
+    if path.is_symlink():
+        path.unlink()
+    del records[args.group][args.name]
+    if not records[args.group]:
+        del records[args.group]
+    write_json(state_dir / "links.json", records)
+    print(f"unlink {args.group}/{args.name}; sync {args.group} restores the pinned checkout")
+
+
 def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
     groups = manifest(args.manifest)
     lock = read_json(args.lockfile)
     state_path = state_dir / "installed.json"
     state = read_json(state_path)
+    records = links(state_dir)
     for group, record in state.items():
         if (not NAME.fullmatch(group) or not isinstance(record, dict)
                 or set(record) != {"target", "repos"}
@@ -245,10 +323,11 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
         owners = previous.get("repos", {})
         repos = spec["repos"]
         pins = lock.get(group, {})
+        linked = records.get(group, {})
         if args.name and args.name not in repos:
             raise ValueError(f"unknown repository: {group}/{args.name}")
         if target.exists():
-            unknown = {p.name for p in target.iterdir()} - owners.keys()
+            unknown = {p.name for p in target.iterdir()} - owners.keys() - linked.keys()
             if unknown:
                 raise ValueError(f"{target}: unowned paths: {', '.join(sorted(unknown))}")
         observations = {}
@@ -256,6 +335,8 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
             path = target / name
             if path.exists() or path.is_symlink():
                 observations[name] = inspect(path, owner)
+        heads = {name: inspect_link(target / name, source, repos[name])
+                 for name, source in linked.items() if name in repos}
 
         # Validate the whole group before network access or filesystem changes.
         for name, repo in repos.items():
@@ -265,6 +346,11 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
                      and bool(SHA.fullmatch(pin.get("commit", ""))))
             if not updating and not valid and args.command != "status":
                 raise ValueError(f"{group}/{name}: missing/stale lock; run update {group} {name}")
+            if name in heads:
+                head, dirty = heads[name]
+                print(f"{group}/{name}: linked {linked[name]} at {head[:12]}"
+                      f"{' (dirty)' if dirty else ''}")
+                continue
             if name in observations:
                 head, dirty = observations[name]
                 if args.command != "status" and (dirty or head != owners[name]["commit"]):
@@ -277,6 +363,8 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
         for name in sorted(owners.keys() - repos.keys()):
             dirty = observations.get(name, ("", False))[1]
             print(f"{group}/{name}: remove{' (local files preserved)' if dirty else ''}")
+        for name in sorted(linked.keys() - repos.keys()):
+            print(f"{group}/{name}: unlink (clone kept)")
         if args.command == "status" or args.dry_run:
             continue
 
@@ -285,6 +373,17 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
         try:
             for name, repo in repos.items():
                 updating = args.command == "update" and (not args.name or args.name == name)
+                if name in heads:
+                    if updating:
+                        staging, commit = checkout(target.parent, repo, None)
+                        shutil.rmtree(staging)
+                        print(f"pin {group}/{name} {commit}")
+                    else:
+                        commit = pins[name]["commit"]
+                    if heads[name][0] != commit:
+                        print(f"{group}/{name}: linked clone is not at the pinned commit")
+                    new_pins[name] = {**repo, "commit": commit}
+                    continue
                 commit = None if updating else pins[name]["commit"]
                 if (updating or name not in observations or observations[name][0] != commit
                         or owners[name]["url"] != repo["url"]):
@@ -306,6 +405,16 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
                     quarantine(path, state_dir)
                 del owners[name]
                 write_json(state_path, state)
+            stale = sorted(linked.keys() - repos.keys())
+            for name in stale:
+                path = target / name
+                if path.is_symlink():
+                    path.unlink()
+                del linked[name]
+            if stale:
+                if not linked:
+                    del records[group]
+                write_json(state_dir / "links.json", records)
             for name, (staging, commit) in prepared.items():
                 path = target / name
                 if path.exists():
@@ -336,15 +445,20 @@ def main() -> int:
     parser.add_argument("--state-dir", type=Path, default=Path(
         os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state"
     ) / "dotfiles/plugins")
-    parser.add_argument("command", choices=("sync", "update", "status", "gc"))
+    parser.add_argument("command", choices=("sync", "update", "status", "gc", "link", "unlink"))
     parser.add_argument("group", nargs="?")
     parser.add_argument("name", nargs="?")
+    parser.add_argument("path", nargs="?")
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     try:
         with process_lock(args.state_dir / "operation.lock"):
-            if args.command == "gc":
+            if args.command in ("link", "unlink"):
+                if not args.group or not args.name or args.all or args.dry_run:
+                    raise ValueError(f"{args.command} takes a group and a repository")
+                (link if args.command == "link" else unlink)(args, args.state_dir)
+            elif args.command == "gc":
                 if args.group or args.name or args.all:
                     raise ValueError("gc takes no group or repository")
                 trash = args.state_dir / "trash"
@@ -359,6 +473,8 @@ def main() -> int:
                             else:
                                 shutil.rmtree(entry)
             else:
+                if args.path:
+                    raise ValueError(f"{args.command} takes no path")
                 reconcile(args, args.state_dir)
         return 0
     except (ValueError, OSError, TypeError, KeyError, EOFError) as error:

@@ -44,6 +44,18 @@ To set up or update a machine, run `./install.sh` and then those two syncs, `tre
 parsers do not follow an `nvim-treesitter` bump on their own. Both scripts accept `status` and
 `--dry-run`. Track `plugins.json`, `plugins.lock`, and `treesitter.json` in Git.
 
+Forks are developed in place. `link` replaces a plugin's checkout with a symlink to a clone of
+your own, so the editor loads the work tree you edit and nothing has to be pushed to try it.
+
+```sh
+./plugins.py link nvim neo-tree.nvim ~/extern/neovim-plugins/neo-tree.nvim
+./plugins.py unlink nvim neo-tree.nvim
+```
+
+Links are machine-local and stay out of `plugins.json`. `sync` leaves a linked clone alone,
+`update` still takes the pin from the remote, so push before bumping the lock, and `unlink`
+restores the pinned checkout on the next sync.
+
 Each script's header comment is the reference for its manifest format, update workflow, and how it
 handles removals, state, and failures. `--help` prints it.
 

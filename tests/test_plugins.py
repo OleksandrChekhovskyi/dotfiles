@@ -65,6 +65,11 @@ class PluginsTest(unittest.TestCase):
     def install(self) -> None:
         self.run_tool("update", "vim")
 
+    def clone(self) -> Path:
+        path = self.root / "clone"
+        self.git("clone", str(self.remote), str(path), cwd=self.root)
+        return path
+
     def test_sync_requires_lock_and_dry_run_does_not_install(self) -> None:
         self.assertIn("missing/stale lock", self.run_tool("sync", "vim", ok=False).stderr)
         self.run_tool("update", "vim", "--dry-run")
@@ -242,6 +247,71 @@ class PluginsTest(unittest.TestCase):
         self.assertEqual(self.git("describe", "--tags", "--exact-match", cwd=checkout), "v1")
         # The recreated ref must not make the checkout look modified.
         self.assertIn("ok", self.run_tool("status", "vim").stdout)
+
+    def test_sync_keeps_a_linked_clone_and_its_pin(self) -> None:
+        self.install()
+        clone = self.clone()
+        self.run_tool("link", "vim", "sample", str(clone))
+        self.assertTrue((self.target / "sample").is_symlink())
+        (clone / "file").write_text("work in progress")
+        (clone / "untracked").write_text("keep me")
+        output = self.run_tool("sync", "vim").stdout
+        self.assertIn("linked", output)
+        self.assertIn("dirty", output)
+        self.assertEqual((clone / "file").read_text(), "work in progress")
+        self.assertEqual((clone / "untracked").read_text(), "keep me")
+        self.assertEqual(json.loads(self.lock.read_text())["vim"]["sample"]["commit"], self.first)
+        # The checkout the link replaced is recoverable.
+        replaced, = (self.state / "trash").iterdir()
+        self.assertEqual((replaced / "file").read_text(), "first")
+
+    def test_update_pins_the_remote_and_reports_a_diverged_clone(self) -> None:
+        self.install()
+        clone = self.clone()
+        self.run_tool("link", "vim", "sample", str(clone))
+        second = self.commit("second")
+        output = self.run_tool("update", "vim").stdout
+        self.assertEqual(json.loads(self.lock.read_text())["vim"]["sample"]["commit"], second)
+        self.assertIn("not at the pinned commit", output)
+        self.assertTrue((self.target / "sample").is_symlink())
+        self.git("pull", "--ff-only", cwd=clone)
+        self.assertNotIn("not at the pinned commit", self.run_tool("sync", "vim").stdout)
+
+    def test_unlink_restores_the_pinned_checkout(self) -> None:
+        self.install()
+        clone = self.clone()
+        self.run_tool("link", "vim", "sample", str(clone))
+        self.run_tool("unlink", "vim", "sample")
+        self.assertFalse((self.target / "sample").exists())
+        self.run_tool("sync", "vim")
+        self.assertEqual((self.target / "sample/file").read_text(), "first")
+        self.assertEqual((clone / "file").read_text(), "first")
+        self.assertEqual(json.loads((self.state / "links.json").read_text()), {})
+
+    def test_removing_a_linked_repository_from_the_manifest_unlinks_it(self) -> None:
+        self.install()
+        clone = self.clone()
+        self.run_tool("link", "vim", "sample", str(clone))
+        self.groups["vim"]["repos"] = {}
+        self.save_manifest()
+        self.run_tool("sync", "vim", "--dry-run")
+        self.assertTrue((self.target / "sample").is_symlink())
+        self.run_tool("sync", "vim")
+        self.assertFalse((self.target / "sample").is_symlink())
+        self.assertEqual((clone / "file").read_text(), "first")
+        self.assertEqual(json.loads((self.state / "links.json").read_text()), {})
+
+    def test_link_requires_a_matching_clone_outside_the_target(self) -> None:
+        self.install()
+        missing = self.run_tool("link", "vim", "sample", str(self.root / "absent"), ok=False)
+        self.assertIn("not a Git checkout", missing.stderr)
+        inside = self.run_tool("link", "vim", "sample", str(self.target / "nested"), ok=False)
+        self.assertIn("must live outside", inside.stderr)
+        clone = self.clone()
+        self.git("remote", "set-url", "origin", "/unexpected", cwd=clone)
+        foreign = self.run_tool("link", "vim", "sample", str(clone), ok=False)
+        self.assertIn("origin changed", foreign.stderr)
+        self.assertFalse((self.target / "sample").is_symlink())
 
     def test_annotated_tag(self) -> None:
         self.git("tag", "-a", "v1", "-m", "release")
