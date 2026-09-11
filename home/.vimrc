@@ -28,7 +28,8 @@ set sidescrolloff=8
 set sidescroll=1
 set splitbelow
 set splitright
-set fillchars+=vert:│
+" The default dashes for diff fillers and fold padding read as content.
+set fillchars+=vert:│,fold:\ ,diff:·
 " Always reserved, so gitgutter signs never shift the text sideways.
 set signcolumn=yes
 
@@ -271,6 +272,38 @@ function! s:TypescriptServer() abort
     return {'path': 'typescript-language-server', 'args': ['--stdio']}
 endfunction
 
+" Replacements for retrobox colors that reach outside its own palette. The gui
+" values are gruvbox shades; the cterm ones approximate them for a terminal
+" without 24-bit color.
+function! s:Highlights() abort
+    " A shade above the background rather than a line across it. The background
+    " is retrobox's, which already matches Normal.
+    highlight VertSplit   guifg=#3c3836 ctermfg=237
+    highlight VertSplitNC guifg=#32302f ctermfg=236
+
+    " retrobox pins a cream foreground over changed lines, hiding the syntax
+    " colors underneath, and puts DiffText on saturated teal. DiffTextAdd marks
+    " text only the new side has, which 'diffopt' inline:char isolates.
+    highlight DiffAdd     guifg=NONE guibg=#26331f ctermfg=NONE ctermbg=22
+    highlight DiffChange  guifg=NONE guibg=#3a3529 ctermfg=NONE ctermbg=237
+    highlight DiffText    guifg=NONE guibg=#4d4632 ctermfg=NONE ctermbg=58
+    highlight DiffTextAdd guifg=NONE guibg=#3b4c2c ctermfg=NONE ctermbg=28
+    " Filler lines hold no text, so the foreground is the fill character alone.
+    highlight DiffDelete  guifg=#503c34 guibg=#2b1e1a ctermfg=238 ctermbg=52
+
+    " The diff syntax, which fugitive's status, log and commit views use,
+    " defaults to pure red and lime green.
+    highlight Added   guifg=#a9b665 ctermfg=107
+    highlight Changed guifg=#d8a657 ctermfg=179
+    highlight Removed guifg=#ea6962 ctermfg=167
+
+    " gitgutter takes its sign colors from the Diff* foregrounds, NONE above,
+    " which would leave all three signs alike.
+    highlight GitGutterAdd    guifg=#a9b665 ctermfg=107
+    highlight GitGutterChange guifg=#d8a657 ctermfg=179
+    highlight GitGutterDelete guifg=#ea6962 ctermfg=167
+endfunction
+
 " -----------------------------------------------------------------------------
 " Autocommands
 " -----------------------------------------------------------------------------
@@ -282,10 +315,8 @@ augroup vimrc
     " overriding the global setting; never auto-wrap regardless.
     autocmd FileType * setlocal textwidth=0 wrapmargin=0
 
-    " Seamless split borders. A colorscheme load clears highlight links, so they
-    " have to be restored on every change.
-    autocmd ColorScheme * highlight! link VertSplit Normal
-    autocmd ColorScheme * highlight! link VertSplitNC Normal
+    " A colorscheme load clears highlights and links; both are restored here.
+    autocmd ColorScheme * call s:Highlights()
     autocmd ColorScheme * highlight! link gitLogDecoration Special
 
     " autoread only reloads on :commands; checktime is what polls. Skip the
@@ -335,6 +366,15 @@ augroup END
 " -----------------------------------------------------------------------------
 " Appearance
 " -----------------------------------------------------------------------------
+" retrobox's 256-color fallbacks force one foreground across a diff, hiding the
+" syntax colors its gui palette leaves alone. COLORTERM is the terminal's own
+" claim of 24-bit support; tmux and screen need the sequences spelled out.
+if has('termguicolors') && ($COLORTERM ==# 'truecolor' || $COLORTERM ==# '24bit')
+    let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+    let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+    set termguicolors
+endif
+
 " Triggers the ColorScheme autocommands above, so it has to follow them.
 " retrobox reads &background as it loads.
 set background=dark
