@@ -226,6 +226,7 @@ require("bufferline").setup({
 require("neo-tree").setup({
   sources = { "filesystem", "buffers", "git_status" },
   open_files_do_not_replace_types = { "qf" },
+  enable_diagnostics = false,
   filesystem = {
     hijack_netrw_behavior = "open_current",
     bind_to_cwd = false,
