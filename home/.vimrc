@@ -54,6 +54,11 @@ set ttimeoutlen=50
 " Drives CursorHold: gitgutter's sign refresh and the checktime autocommand.
 set updatetime=250
 
+" Unset, a modified buffer cannot be left behind, and the lsp plugin answers
+" that by splitting the window rather than jumping in place. :qall still
+" refuses to discard unsaved changes.
+set hidden
+
 set noswapfile
 set autoread
 " Undo files hold buffer text, and with noswapfile they are the only recovery.
