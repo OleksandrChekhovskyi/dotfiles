@@ -41,6 +41,9 @@ set history=1000
 " First <Tab> completes the longest common prefix and shows the menu; later
 " ones cycle through matches.
 set wildmode=longest:full,full
+" Uncapped, the match list grows to fill the window. The documentation popup
+" beside it has a cap of its own, in 'completepopup' below.
+set pumheight=12
 
 " How long an ambiguous mapping waits for the next key: visual y must rule out
 " yr before it can act.
@@ -254,6 +257,15 @@ function! s:Reference(lines) range abort
     echo l:ref
 endfunction
 
+" Accept key for the completion menu. A menu under a 'completeopt' that keeps
+" noselect highlights nothing, so accepting there has to pick the top entry.
+function! s:AcceptCompletion(fallback) abort
+    if !pumvisible()
+        return a:fallback
+    endif
+    return complete_info(['selected']).selected >= 0 ? "\<C-y>" : "\<C-n>\<C-y>"
+endfunction
+
 " TypeScript 7 is a native binary with its own LSP mode and no tsserver.js, so
 " typescript-language-server cannot drive it; TypeScript 6 and older have no
 " --lsp. Homebrew and Arch both link tsc into the package's bin/, so the version
@@ -310,6 +322,14 @@ endfunction
 augroup vimrc
     autocmd!
     autocmd FocusGained * call s:RefreshFugitive()
+
+    " The plugin sets both of these as a server attaches, with no option to say
+    " otherwise, and LspAttached fires after that. noinsert stays: the
+    " highlighted match is shown only, never written to the buffer.
+    autocmd User LspAttached setlocal completeopt-=noselect
+    " height caps the documentation popup; the rest repeats the plugin's value.
+    autocmd User LspAttached
+                \ set completepopup=width:80,height:12,highlight:Pmenu,align:item,border:off
 
     " Filetype plugins impose their own textwidth (78 for gitcommit, text, ...),
     " overriding the global setting; never auto-wrap regardless.
@@ -470,13 +490,11 @@ nnoremap <silent> <leader>qq :qa<CR>
 nnoremap <silent> <leader>us :setlocal spell! spell?<CR>
 nnoremap <silent> <leader>uw :setlocal wrap! wrap?<CR>
 
-" Completion
-" 'noselect' leaves nothing highlighted until you move, so a first Tab has to
-" both pick the top entry and accept it. noNewlineInCompletion then leaves <CR>
-" a plain newline rather than a second accept key.
-inoremap <expr> <Tab> pumvisible()
-            \ ? (complete_info(['selected']).selected >= 0 ? "\<C-y>" : "\<C-n>\<C-y>")
-            \ : "\<Tab>"
+" Completion. noNewlineInCompletion has to stay set: left off, the plugin binds
+" <CR> per buffer to accept and open a line, and a buffer-local mapping wins
+" over this one. <C-e> dismisses the menu when what you want is a newline.
+inoremap <expr> <Tab> <SID>AcceptCompletion("\<Tab>")
+inoremap <expr> <CR> <SID>AcceptCompletion("\<CR>")
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 
 " Windows
