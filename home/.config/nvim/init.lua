@@ -470,6 +470,7 @@ require("blink.cmp").setup({
   keymap = {
     preset = "default",
     ["<CR>"] = { "accept", "fallback" },
+    ["<Tab>"] = { "snippet_forward", "accept", "fallback" },
     ["<Esc>"] = {
       function(cmp)
         cmp.cancel()
