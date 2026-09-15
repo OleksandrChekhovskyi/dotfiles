@@ -42,6 +42,8 @@ vim.opt.cursorline = true
 vim.opt.wrap = false
 vim.opt.textwidth = 0
 vim.opt.laststatus = 1
+-- Statusline ruler: screen column only, so tabs count as 'tabstop' spaces.
+vim.opt.rulerformat = "%15(%l,%v%= %P%)%<"
 vim.opt.fillchars:append({ eob = " " })
 vim.opt.scrolloff = 5
 vim.opt.sidescrolloff = 8

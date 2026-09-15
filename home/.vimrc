@@ -19,6 +19,8 @@ set number
 set cursorline
 set nowrap
 set ruler
+" Ruler shows the screen column only, so tabs count as 'tabstop' spaces.
+let &rulerformat = '%15(%l,%v%= %P%)%<'
 set display=truncate
 " Context around the cursor: without it a jump to a definition or reference
 " lands on the last visible line. sidescroll=1 scrolls a column at a time
