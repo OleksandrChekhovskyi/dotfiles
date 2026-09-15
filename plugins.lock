@@ -61,7 +61,7 @@
       "url": "https://github.com/nvim-mini/mini.icons"
     },
     "neo-tree.nvim": {
-      "commit": "75a78a387291baad029b2297367e4be2dca1c811",
+      "commit": "993a316dc1e35be18c0ca3458429d7b9351094f6",
       "ref": "refs/heads/nvim-ide",
       "url": "https://github.com/OleksandrChekhovskyi/neo-tree.nvim"
     },
