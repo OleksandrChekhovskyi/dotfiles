@@ -21,6 +21,11 @@ bindings = [
 	{ key = "Return", mods = "Shift", chars = "\n" },
 	{ key = "K", mods = "Control|Shift", chars = "\f" },
 	{ key = "N", mods = "Control|Shift", action = "CreateNewWindow" },
+	# Alt+' stands in for the ` / ~ key missing on function-rowless keyboards.
+	# The shifted half needs two bindings: it arrives as `"` on Linux/BSD, `'` on macOS.
+	{ key = "'",  mods = "Alt",       chars = "`" },
+	{ key = "\"", mods = "Alt|Shift", chars = "~" },
+	{ key = "'",  mods = "Alt|Shift", chars = "~" },
 	# macOS-only: forward Cmd+Arrow to tmux as user-keys for window switching.
 	# (Alt+Arrow is reserved for shell word-jump.) Inert on Linux.
 	{ key = "Left",  mods = "Command",       chars = "\u001B[5900~" },
