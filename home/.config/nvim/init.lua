@@ -459,8 +459,8 @@ require("gitsigns").setup({
     local map = function(mode, l, r, desc)
       vim.keymap.set(mode, l, r, { buf = bufnr, desc = desc })
     end
-    map("n", "]h", gs.next_hunk, "Next hunk")
-    map("n", "[h", gs.prev_hunk, "Previous hunk")
+    map("n", "]h", function() gs.nav_hunk("next") end, "Next hunk")
+    map("n", "[h", function() gs.nav_hunk("prev") end, "Previous hunk")
     map("n", "<leader>ghs", gs.stage_hunk, "Stage hunk")
     map("n", "<leader>ghr", gs.reset_hunk, "Reset hunk")
     map("n", "<leader>ghp", gs.preview_hunk, "Preview hunk")
@@ -631,12 +631,6 @@ map("n", "<leader>xq", function()
   vim.cmd("botright copen")
 end, { desc = "Toggle quickfix list" })
 
--- Move lines
-map("n", "<A-j>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
-map("n", "<A-k>", "<cmd>m .-2<cr>==", { desc = "Move line up" })
-map("v", "<A-j>", ":m '>+1<cr>gv=gv", { desc = "Move lines down" })
-map("v", "<A-k>", ":m '<-2<cr>gv=gv", { desc = "Move lines up" })
-
 -- Window navigation
 map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
 map("n", "<C-j>", "<C-w>j", { desc = "Go to lower window" })
@@ -668,8 +662,6 @@ map("t", "<C-\\>", [[<C-\><C-n>]], { desc = "Terminal: exit to normal mode" })
 -- Buffer navigation
 map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
 map("n", "<S-l>", "<cmd>bnext<cr>", { desc = "Next buffer" })
-map("n", "[b", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
-map("n", "]b", "<cmd>bnext<cr>", { desc = "Next buffer" })
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 map("n", "<leader>bd", function()
   require("mini.bufremove").wipeout(0, false)
@@ -788,8 +780,6 @@ end, { method = "textDocument/inlayHint" }), { desc = "Toggle inlay hints" })
 
 -- Unguarded: diagnostics also come from sources other than LSP.
 map("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
-map("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, { desc = "Previous diagnostic" })
-map("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, { desc = "Next diagnostic" })
 map("n", "[e", function()
   vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR })
 end, { desc = "Previous error" })
@@ -861,6 +851,6 @@ vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
 vim.api.nvim_create_autocmd("TextYankPost", {
   group = vim.api.nvim_create_augroup("nvim-highlight-yank", { clear = true }),
   callback = function()
-    vim.highlight.on_yank({ higroup = "YankHighlight" })
+    vim.hl.on_yank({ higroup = "YankHighlight" })
   end,
 })
