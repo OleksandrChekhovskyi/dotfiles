@@ -301,6 +301,10 @@ def sync(args: argparse.Namespace) -> None:
     if all(action == "ok" for action in actions.values()) and not stale:
         return
     install_dir.mkdir(parents=True, exist_ok=True)
+    # The process lock means any staging directory still here was orphaned by a crash.
+    for orphan in sorted(install_dir.glob(".treesitter-*")):
+        shutil.rmtree(orphan, ignore_errors=True)
+        print(f"delete {orphan}")
     staging = Path(tempfile.mkdtemp(prefix=".treesitter-new-", dir=install_dir))
     try:
         assemble(install_dir, source, selected, actions, abi, staging, args.jobs)

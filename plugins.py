@@ -14,10 +14,10 @@ than running update. blink.cmp is pinned this way because it downloads a prebuil
 the release it is checked out at. Changing a group's target means emptying its repository list
 and syncing at the old target first, then restoring the list under the new one.
 
-Ownership records and quarantine live under ${XDG_STATE_HOME:-~/.local/state}/dotfiles/plugins.
-Keep that state: existing directories cannot be adopted without it. Unknown paths, changed
-origins, and local edits in retained checkouts are refused. Replaced and removed checkouts are
-quarantined rather than deleted until gc is confirmed.
+Ownership records live under ${XDG_STATE_HOME:-~/.local/state}/dotfiles/plugins. Keep that
+state: existing directories cannot be adopted without it. Unknown paths, changed origins, and
+local edits are refused, so every checkout this script deletes is reproducible: check out an
+older plugins.lock and sync to get it back.
 
 link GROUP NAME PATH replaces a checkout with a symlink to an existing clone of the same origin,
 so a fork can be developed in place and loaded by the editor without a push. Links are recorded
@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import argparse
 from contextlib import contextmanager
-from datetime import datetime, timezone
 import fcntl
 import json
 import os
@@ -45,7 +44,6 @@ import subprocess
 import sys
 import tempfile
 from typing import Any, Iterator
-import uuid
 
 ROOT = Path(__file__).resolve().parent
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
@@ -151,7 +149,7 @@ def inspect(path: Path, owner: dict[str, str]) -> tuple[str, bool]:
             != owner["url"].removesuffix(".git")):
         raise ValueError(f"origin changed: {path}")
     head = git("rev-parse", "HEAD", cwd=path)
-    # Ignored build artifacts survive replacement in quarantine too.
+    # Ignored build artifacts are not local work; plugins that download them fetch them again.
     dirty = bool(git("status", "--porcelain", "--untracked-files=all", cwd=path))
     return head, dirty
 
@@ -162,13 +160,10 @@ def inspect_link(path: Path, source: str, repo: dict[str, str]) -> tuple[str, bo
     return inspect(Path(source), repo)
 
 
-def quarantine(path: Path, state_dir: Path) -> None:
-    trash = state_dir / "trash"
-    trash.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    destination = trash / f"{stamp}-{uuid.uuid4().hex[:8]}-{path.name}"
-    shutil.move(str(path), str(destination))
-    print(f"quarantine {path} -> {destination}")
+def discard(path: Path) -> None:
+    """Delete a checkout this script owns; callers must have refused any local changes first."""
+    shutil.rmtree(path)
+    print(f"delete {path}")
 
 
 def helptags(path: Path) -> None:
@@ -242,7 +237,10 @@ def link(args: argparse.Namespace, state_dir: Path) -> None:
     elif path.exists():
         if args.name not in owners:
             raise ValueError(f"{path}: unowned path")
-        quarantine(path, state_dir)
+        head, dirty = inspect(path, owners[args.name])
+        if dirty or head != owners[args.name]["commit"]:
+            raise ValueError(f"{path}: local changes; refusing to replace checkout")
+        discard(path)
     # Drop ownership before the symlink exists, so an interrupted run leaves nothing adopted.
     owners.pop(args.name, None)
     write_json(state_path, state)
@@ -305,6 +303,12 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
         raise ValueError("specify either a group or --all")
     if args.name and (args.command != "update" or args.all):
         raise ValueError("a repository name requires update GROUP NAME")
+    # Earlier versions moved replaced checkouts here instead of deleting them; the first sync
+    # on each machine drops what they left. Remove this once every machine has synced.
+    trash = state_dir / "trash"
+    if trash.is_dir() and args.command != "status" and not args.dry_run:
+        shutil.rmtree(trash, ignore_errors=True)
+        print(f"delete {trash}")
 
     for group in selected:
         if group not in groups and group not in state:
@@ -361,12 +365,20 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
                 else "mismatched")
             print(f"{group}/{name}: {'update' if updating else status}")
         for name in sorted(owners.keys() - repos.keys()):
-            dirty = observations.get(name, ("", False))[1]
-            print(f"{group}/{name}: remove{' (local files preserved)' if dirty else ''}")
+            head, dirty = observations.get(name, (owners[name]["commit"], False))
+            modified = dirty or head != owners[name]["commit"]
+            if modified and args.command != "status":
+                raise ValueError(f"{group}/{name}: local changes; refusing to remove checkout")
+            print(f"{group}/{name}: remove{' (local changes)' if modified else ''}")
         for name in sorted(linked.keys() - repos.keys()):
             print(f"{group}/{name}: unlink (clone kept)")
         if args.command == "status" or args.dry_run:
             continue
+
+        # The process lock means any staging directory still here was orphaned by a crash.
+        for orphan in sorted(target.parent.glob(".plugins-*")):
+            shutil.rmtree(orphan, ignore_errors=True)
+            print(f"delete {orphan}")
 
         prepared: dict[str, tuple[Path, str]] = {}
         new_pins = {}
@@ -402,7 +414,7 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
             for name in sorted(owners.keys() - repos.keys()):
                 path = target / name
                 if path.exists():
-                    quarantine(path, state_dir)
+                    discard(path)
                 del owners[name]
                 write_json(state_path, state)
             stale = sorted(linked.keys() - repos.keys())
@@ -418,7 +430,7 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
             for name, (staging, commit) in prepared.items():
                 path = target / name
                 if path.exists():
-                    quarantine(path, state_dir)
+                    discard(path)
                 # Record ownership before activation, so an interrupted run can recover.
                 owners[name] = {"url": repos[name]["url"], "commit": commit}
                 write_json(state_path, state)
@@ -445,7 +457,7 @@ def main() -> int:
     parser.add_argument("--state-dir", type=Path, default=Path(
         os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state"
     ) / "dotfiles/plugins")
-    parser.add_argument("command", choices=("sync", "update", "status", "gc", "link", "unlink"))
+    parser.add_argument("command", choices=("sync", "update", "status", "link", "unlink"))
     parser.add_argument("group", nargs="?")
     parser.add_argument("name", nargs="?")
     parser.add_argument("path", nargs="?")
@@ -458,26 +470,12 @@ def main() -> int:
                 if not args.group or not args.name or args.all or args.dry_run:
                     raise ValueError(f"{args.command} takes a group and a repository")
                 (link if args.command == "link" else unlink)(args, args.state_dir)
-            elif args.command == "gc":
-                if args.group or args.name or args.all:
-                    raise ValueError("gc takes no group or repository")
-                trash = args.state_dir / "trash"
-                entries = sorted(trash.iterdir()) if trash.exists() else []
-                for entry in entries:
-                    print(f"delete {entry}")
-                if entries and not args.dry_run:
-                    if input("Permanently delete these quarantined checkouts? [y/N] ") == "y":
-                        for entry in entries:
-                            if entry.is_symlink() or entry.is_file():
-                                entry.unlink()
-                            else:
-                                shutil.rmtree(entry)
             else:
                 if args.path:
                     raise ValueError(f"{args.command} takes no path")
                 reconcile(args, args.state_dir)
         return 0
-    except (ValueError, OSError, TypeError, KeyError, EOFError) as error:
+    except (ValueError, OSError, TypeError, KeyError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

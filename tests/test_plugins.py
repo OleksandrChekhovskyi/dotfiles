@@ -86,7 +86,7 @@ class PluginsTest(unittest.TestCase):
         self.run_tool("update", "vim", "sample")
         self.assertEqual(self.git("rev-parse", "HEAD", cwd=self.target / "sample"), second)
         self.assertIn("ok", self.run_tool("status", "--all").stdout)
-        self.assertEqual(len(list((self.state / "trash").iterdir())), 1)
+        self.assertFalse(list(self.target.parent.glob(".plugins-*")))
 
     def test_restore_missing_checkout_from_lock_without_remote_branch(self) -> None:
         self.install()
@@ -95,23 +95,50 @@ class PluginsTest(unittest.TestCase):
         self.run_tool("sync", "vim")
         self.assertEqual(self.git("rev-parse", "HEAD", cwd=self.target / "sample"), self.first)
 
-    def test_dirty_update_refused_but_removal_preserves_everything(self) -> None:
+    def test_dirty_checkout_is_never_replaced_or_removed(self) -> None:
         self.install()
         (self.target / "sample/file").write_text("local edits")
         (self.target / "sample/untracked").write_text("keep me")
         self.assertIn("local changes", self.run_tool("update", "vim", ok=False).stderr)
+        linking = self.run_tool("link", "vim", "sample", str(self.clone()), ok=False)
+        self.assertIn("local changes", linking.stderr)
+        self.groups["vim"]["repos"] = {}
+        self.save_manifest()
+        self.assertIn("local changes", self.run_tool("status", "vim").stdout)
+        self.assertIn("local changes", self.run_tool("sync", "vim", ok=False).stderr)
+        self.assertEqual((self.target / "sample/file").read_text(), "local edits")
+        self.assertEqual((self.target / "sample/untracked").read_text(), "keep me")
+
+    def test_clean_removal_deletes_the_checkout(self) -> None:
+        self.install()
         self.groups["vim"]["repos"] = {}
         self.save_manifest()
         self.run_tool("sync", "vim", "--dry-run")
         self.assertTrue((self.target / "sample").exists())
         self.run_tool("sync", "vim")
         self.assertFalse((self.target / "sample").exists())
-        removed, = (self.state / "trash").iterdir()
-        self.assertEqual((removed / "file").read_text(), "local edits")
-        self.assertEqual((removed / "untracked").read_text(), "keep me")
         self.assertEqual(json.loads(self.lock.read_text()), {})
-        self.run_tool("gc", "--dry-run")
-        self.assertTrue(removed.exists())
+
+    def test_quarantine_left_by_earlier_versions_is_dropped(self) -> None:
+        self.install()
+        trash = self.state / "trash"
+        trash.mkdir()
+        (trash / "20260101T000000Z-abcdef12-sample").mkdir()
+        self.run_tool("status", "vim")
+        self.run_tool("sync", "vim", "--dry-run")
+        self.assertTrue(trash.is_dir())
+        self.assertIn(str(trash), self.run_tool("sync", "vim").stdout)
+        self.assertFalse(trash.exists())
+
+    def test_stale_staging_directory_is_swept(self) -> None:
+        self.install()
+        orphan = self.target.parent / ".plugins-crashed"
+        orphan.mkdir()
+        (orphan / "leftover").write_text("junk")
+        self.run_tool("status", "vim")
+        self.assertTrue(orphan.exists())
+        self.run_tool("sync", "vim")
+        self.assertFalse(orphan.exists())
 
     def test_deleted_group_cleanup(self) -> None:
         self.install()
@@ -187,7 +214,6 @@ class PluginsTest(unittest.TestCase):
         inode = (self.target / "sample").stat().st_ino
         self.run_tool("update", "vim")
         self.assertEqual((self.target / "sample").stat().st_ino, inode)
-        self.assertFalse((self.state / "trash").exists())
 
     def test_manifest_url_change_replaces_origin_even_at_same_commit(self) -> None:
         self.install()
@@ -261,9 +287,6 @@ class PluginsTest(unittest.TestCase):
         self.assertEqual((clone / "file").read_text(), "work in progress")
         self.assertEqual((clone / "untracked").read_text(), "keep me")
         self.assertEqual(json.loads(self.lock.read_text())["vim"]["sample"]["commit"], self.first)
-        # The checkout the link replaced is recoverable.
-        replaced, = (self.state / "trash").iterdir()
-        self.assertEqual((replaced / "file").read_text(), "first")
 
     def test_update_pins_the_remote_and_reports_a_diverged_clone(self) -> None:
         self.install()
