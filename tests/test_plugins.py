@@ -253,12 +253,34 @@ class PluginsTest(unittest.TestCase):
         (doc / "sample.txt").write_text("*sample-plugin* A test plugin\n")
         self.git("add", "doc")
         self.git("commit", "-m", "documentation")
-        self.groups["vim"]["helptags"] = True
+        self.groups["vim"]["editor"] = "vim"
         self.save_manifest()
         self.install()
         self.assertIn("sample-plugin", (self.target / "sample/doc/tags").read_text())
         self.assertIn("ok", self.run_tool("status", "vim").stdout)
         self.run_tool("sync", "vim")
+
+    def test_commands_default_to_every_group_except_update(self) -> None:
+        self.install()
+        self.assertIn("vim/sample: ok", self.run_tool("status").stdout)
+        self.run_tool("sync")
+        self.assertTrue((self.target / "sample").exists())
+        self.assertIn("update takes a group", self.run_tool("update", ok=False).stderr)
+        self.assertIn("either a group or --all",
+                      self.run_tool("sync", "vim", "--all", ok=False).stderr)
+
+    def test_group_is_skipped_when_its_editor_is_missing(self) -> None:
+        self.groups["vim"]["editor"] = "dotfiles-absent-editor"
+        self.save_manifest()
+        output = self.run_tool("sync", "--all").stdout
+        self.assertIn("vim: skipped (dotfiles-absent-editor is not installed)", output)
+        self.assertFalse((self.target / "sample").exists())
+        self.assertFalse(self.lock.exists())
+        # Installing the editor later is enough; nothing has to be repaired first.
+        del self.groups["vim"]["editor"]
+        self.save_manifest()
+        self.install()
+        self.assertTrue((self.target / "sample").exists())
 
     def test_checkout_carries_the_manifest_ref(self) -> None:
         self.install()

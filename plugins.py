@@ -4,10 +4,14 @@
 Requires Git. plugins.json declares groups, each with a target directory and a list of
 repositories given as a URL and a branch or tag ref; plugins.lock pins every repository to
 an exact commit. Track both files in Git. Targets support ~ and ${XDG_DATA_HOME} (default
-~/.local/share), and the optional group setting "helptags": true builds help indexes with Vim.
+~/.local/share). The optional group setting "editor" names the editor a group belongs to:
+its help indexes are built with that binary, and the whole group is skipped with a message
+when the binary is not on PATH, so a machine with only one editor installed still syncs.
 
 sync installs the locked commits and never selects newer ones, so a missing or stale pin
-requires an explicit update. Add a repository by editing the manifest and running
+requires an explicit update. sync and status cover every group when none is named, which with
+the skipping above means whatever this machine has an editor for; update takes a group, or
+--all to bump every pin. Add a repository by editing the manifest and running
 update GROUP NAME; remove one by deleting its entry and running sync GROUP. A repository
 pinned to a tag ref stays on that tag, so bumping it means editing ref in the manifest rather
 than running update. blink.cmp is pinned this way because it downloads a prebuilt library for
@@ -106,10 +110,11 @@ def manifest(path: Path) -> dict[str, Any]:
     for group, spec in groups.items():
         if (not NAME.fullmatch(group) or not isinstance(spec, dict)
                 or not {"target", "repos"} <= spec.keys()
-                or set(spec) - {"target", "repos", "helptags"}):
+                or set(spec) - {"target", "repos", "editor"}):
             raise ValueError(f"invalid group: {group}")
-        if not isinstance(spec.get("helptags", False), bool):
-            raise ValueError(f"{group}: helptags must be a boolean")
+        if "editor" in spec and not (isinstance(spec["editor"], str)
+                                     and NAME.fullmatch(spec["editor"])):
+            raise ValueError(f"{group}: editor must be the name of a binary on PATH")
         target = expand_target(spec["target"])
         if target == Path.home().resolve() or target == Path("/"):
             raise ValueError(f"unsafe target: {target}")
@@ -166,12 +171,12 @@ def discard(path: Path) -> None:
     print(f"delete {path}")
 
 
-def helptags(path: Path) -> None:
+def helptags(path: Path, editor: str) -> None:
     doc = path / "doc"
     if not doc.is_dir():
         return
     result = subprocess.run(
-        ["vim", "-u", "NONE", "-i", "NONE", "-n", "-es",
+        [editor, "-u", "NONE", "-i", "NONE", "-n", "-es",
          "-c", "execute 'helptags ' . fnameescape($DOTFILES_PLUGIN_DOC)", "-c", "qa!"],
         env={**os.environ, "DOTFILES_PLUGIN_DOC": str(doc)}, capture_output=True, text=True,
     )
@@ -298,9 +303,14 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
                     or any(not isinstance(value, str) for value in pin.values())
                     or not SHA.fullmatch(pin["commit"])):
                 raise ValueError(f"invalid lock entry: {group}/{name}")
-    selected = sorted(set(groups) | set(state) | set(lock)) if args.all else [args.group]
-    if args.all == bool(args.group):
+    if args.all and args.group:
         raise ValueError("specify either a group or --all")
+    every = args.all or not args.group
+    # Bumping every pin at once is a deliberate act, so update alone is refused; sync and
+    # status describe the whole machine and are the commands typed without an argument.
+    if every and not args.all and args.command == "update":
+        raise ValueError("update takes a group, or --all to bump every pin")
+    selected = sorted(set(groups) | set(state) | set(lock)) if every else [args.group]
     if args.name and (args.command != "update" or args.all):
         raise ValueError("a repository name requires update GROUP NAME")
     # Earlier versions moved replaced checkouts here instead of deleting them; the first sync
@@ -321,6 +331,12 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
             continue
         previous = state.get(group, {})
         spec = groups.get(group, {"target": previous.get("target"), "repos": {}})
+        # An editor missing from this machine is not an error: leave the group untouched,
+        # pins included, so installing the editor later and syncing again is all it takes.
+        editor = spec.get("editor")
+        if editor and not shutil.which(editor):
+            print(f"{group}: skipped ({editor} is not installed)")
+            continue
         target = expand_target(spec["target"])
         if previous and previous["target"] != str(target):
             raise ValueError(f"{group}: target changed; empty and sync the old group first")
@@ -406,8 +422,8 @@ def reconcile(args: argparse.Namespace, state_dir: Path) -> None:
                         new_pins[name] = {**repo, "commit": commit}
                         continue
                     prepared[name] = staging, commit
-                    if spec.get("helptags", False):
-                        helptags(staging)
+                    if editor:
+                        helptags(staging, editor)
                 new_pins[name] = {**repo, "commit": commit}
             target.mkdir(parents=True, exist_ok=True)
             state[group] = {"target": str(target), "repos": owners}
@@ -458,10 +474,10 @@ def main() -> int:
         os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state"
     ) / "dotfiles/plugins")
     parser.add_argument("command", choices=("sync", "update", "status", "link", "unlink"))
-    parser.add_argument("group", nargs="?")
+    parser.add_argument("group", nargs="?", help="default: every group, for sync and status")
     parser.add_argument("name", nargs="?")
     parser.add_argument("path", nargs="?")
-    parser.add_argument("--all", action="store_true")
+    parser.add_argument("--all", action="store_true", help="every group; update requires it")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     try:

@@ -2,7 +2,7 @@
   "groups": {
     "vim": {
       "target": "~/.vim/pack/dotfiles/start",
-      "helptags": true,
+      "editor": "vim",
       "repos": {
         "fzf": {
           "url": "https://github.com/junegunn/fzf",
@@ -36,7 +36,7 @@
     },
     "nvim": {
       "target": "${XDG_DATA_HOME}/nvim/site/pack/dotfiles/start",
-      "helptags": true,
+      "editor": "nvim",
       "repos": {
         "catppuccin": {
           "url": "https://github.com/catppuccin/nvim",

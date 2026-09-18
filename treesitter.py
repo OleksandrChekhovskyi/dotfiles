@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build pinned Tree-sitter parsers and queries for Neovim (Python 3.11+, Unix).
 
-Requires Neovim, the tree-sitter CLI, curl, and tar. treesitter.json names the languages to
+Requires Neovim, the tree-sitter CLI, curl, and tar; without Neovim on PATH every command
+prints that it skipped and exits successfully. treesitter.json names the languages to
 build, the install directory, and the nvim-treesitter checkout to read. That checkout supplies
 both the grammar revisions and the query files, so plugins.lock pins them transitively; run a
 sync after bumping nvim-treesitter, since parsers do not follow it on their own.
@@ -329,6 +330,11 @@ def main() -> int:
     if args.jobs < 1:
         print("error: jobs must be positive", file=sys.stderr)
         return 1
+    # Parsers are useless without the editor that loads them, and the grammar table is read
+    # with it, so a machine without Neovim has nothing to do here.
+    if shutil.which("nvim") is None:
+        print("skipped (nvim is not installed)")
+        return 0
     try:
         with process_lock(args.state_dir / "operation.lock"):
             sync(args)

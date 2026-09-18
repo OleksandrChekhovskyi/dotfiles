@@ -165,5 +165,18 @@ class TreesitterTest(unittest.TestCase):
         self.assertIn("manifest must contain", result.stderr)
 
 
+class MissingNeovimTest(unittest.TestCase):
+    """A machine without Neovim must get a message and a success, not a build failure."""
+
+    def test_sync_skips_without_nvim_on_path(self) -> None:
+        with tempfile.TemporaryDirectory() as empty:
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "sync"], text=True, capture_output=True,
+                env={**os.environ, "PATH": empty},
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("skipped (nvim is not installed)", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

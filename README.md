@@ -29,20 +29,25 @@ config, so a sync is enough to make a machine match the checked-in configuration
 
 - `plugins.py` checks out pinned Git repositories into the Vim and Neovim package directories.
   `plugins.json` declares groups, targets, and branch/tag refs; `plugins.lock` pins exact commits.
-  Two groups are defined, `vim` and `nvim`.
+  Two groups are defined, `vim` and `nvim`. Each names its editor, which builds the group's
+  help indexes; a group whose editor is not installed is reported as skipped and left alone.
+  `sync` and `status` cover both groups unless one is named, so they do whatever a machine's
+  editors call for; `update` takes a group, or `--all` to bump every pin.
 - `treesitter.py` builds Neovim's Tree-sitter parsers and installs their queries.
   `treesitter.json` lists the languages. Revisions and query files come from the pinned
   `nvim-treesitter` checkout, so `plugins.lock` pins the parsers too.
 
 ```sh
-./plugins.py sync --all             # Install the locked revisions, drop removed ones
+./plugins.py sync                   # Install the locked revisions, drop removed ones
 ./plugins.py update nvim fzf-lua    # Bump one plugin and its lock entry
 ./treesitter.py sync                # Rebuild parsers that moved, drop unpinned ones
 ```
 
 To set up or update a machine, run `./install.sh` and then those two syncs, `treesitter.py` last:
-parsers do not follow an `nvim-treesitter` bump on their own. Both scripts accept `status` and
-`--dry-run`. Track `plugins.json`, `plugins.lock`, and `treesitter.json` in Git.
+parsers do not follow an `nvim-treesitter` bump on their own. `treesitter.py` skips its work
+entirely when Neovim is missing, so both syncs are safe on a machine with only one editor, or
+neither. Both scripts accept `status` and `--dry-run`. Track `plugins.json`, `plugins.lock`,
+and `treesitter.json` in Git.
 
 Forks are developed in place. `link` replaces a plugin's checkout with a symlink to a clone of
 your own, so the editor loads the work tree you edit and nothing has to be pushed to try it.
