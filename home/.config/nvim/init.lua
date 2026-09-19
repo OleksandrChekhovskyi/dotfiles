@@ -806,6 +806,23 @@ vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
   end,
 })
 
+-- Drop scroll padding in side panels, where it makes mouse clicks near the top
+-- or bottom scroll the list instead of selecting the entry.
+vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
+  group = vim.api.nvim_create_augroup("nvim-panel-scrolloff", { clear = true }),
+  callback = function()
+    local panel_filetypes = {
+      ["neo-tree"] = true,
+      ["DiffviewFiles"] = true,
+      ["DiffviewFileHistory"] = true,
+    }
+    if panel_filetypes[vim.bo.filetype] then
+      vim.wo.scrolloff = 0
+      vim.wo.sidescrolloff = 0
+    end
+  end,
+})
+
 -- C/C++ indentation tweaks for Vim's built-in cindent engine.
 vim.api.nvim_create_autocmd("FileType", {
   group = vim.api.nvim_create_augroup("nvim-cpp-indent", { clear = true }),
