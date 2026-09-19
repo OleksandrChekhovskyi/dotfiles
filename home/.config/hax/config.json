@@ -1,4 +1,17 @@
 {
+  "providers": {
+    "openrouter": {
+      "extra_body": {
+        "provider": {
+          "sort": "price",
+          "preferred_min_throughput": {
+            "p50": 60,
+            "p90": 30
+          }
+        }
+      }
+    }
+  },
   "presets": {
     "local": {
       "tint": "sage",
@@ -24,14 +37,14 @@
     },
     "ds": {
       "tint": "sage",
-      "provider": "opencode-go",
-      "model": "deepseek-v4.1-flash",
+      "provider": "openrouter",
+      "model": "deepseek/deepseek-v4.1-flash",
       "effort": "max"
     },
     "glm": {
       "tint": "rose",
-      "provider": "opencode-go",
-      "model": "glm-5.3-flash",
+      "provider": "openrouter",
+      "model": "z-ai/glm-5.3-flash",
       "effort": "max"
     }
   }
