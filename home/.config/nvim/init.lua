@@ -234,6 +234,28 @@ require("neo-tree").setup({
     bind_to_cwd = false,
     follow_current_file = { enabled = true },
     use_libuv_file_watcher = true,
+    -- "-" goes up a directory like upstream Neovim's built-in directory browser:
+    -- unlike <bs> (navigate_up), it selects the directory it came from rather than
+    -- keeping it expanded around the node under the cursor.
+    window = {
+      mappings = {
+        ["-"] = "navigate_parent",
+      },
+    },
+    commands = {
+      ---@param state neotree.sources.filesystem.StateWithTree
+      navigate_parent = function(state)
+        local parent = vim.fs.dirname(state.path)
+        if parent == state.path then
+          return
+        end
+        local fs = require("neo-tree.sources.filesystem")
+        if state.search_pattern then
+          fs.reset_search(state, false)
+        end
+        fs._navigate_internal(state, parent, state.path, nil, false)
+      end,
+    },
     filtered_items = {
       visible = false,
       hide_dotfiles = false,
@@ -690,6 +712,19 @@ map("n", "<leader>o", function()
   end
   vim.cmd("Neotree focus")
 end, { desc = "Toggle file explorer focus" })
+-- Oil-style browsing: "-" opens the current file's parent directory in the current
+-- window with the file selected. The per-window state is separate from the sidebar's.
+map("n", "-", function()
+  local file = vim.api.nvim_buf_get_name(0)
+  local args = { source = "filesystem", position = "current" }
+  if vim.bo.buftype == "" and file ~= "" and vim.uv.fs_stat(file) then
+    args.dir = vim.fs.dirname(file)
+    args.reveal_file = file
+  else
+    args.dir = vim.uv.cwd()
+  end
+  require("neo-tree.command").execute(args)
+end, { desc = "Open parent directory" })
 map("n", "<leader>ge", function()
   require("neo-tree.command").execute({ source = "git_status", toggle = true })
 end, { desc = "Git explorer" })
