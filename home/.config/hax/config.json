@@ -12,6 +12,15 @@
       }
     }
   },
+  "catalog": {
+    "models": {
+      "codex": {
+        "gpt-6-astra": { "limit": { "context": 872000 } },
+        "gpt-6-sol": { "limit": { "context": 872000 } },
+        "gpt-6-luna": { "limit": { "context": 872000 } }
+      }
+    }
+  },
   "presets": {
     "local": {
       "tint": "sage",
@@ -21,18 +30,18 @@
       "tint": "teal",
       "provider": "codex",
       "model": "gpt-6-astra",
-      "effort": "medium"
+      "effort": "high"
     },
     "sol": {
       "tint": "teal",
       "provider": "codex",
-      "model": "gpt-5.6-sol",
+      "model": "gpt-6-sol",
       "effort": "high"
     },
     "luna": {
       "tint": "violet",
       "provider": "codex",
-      "model": "gpt-5.6-luna",
+      "model": "gpt-6-luna",
       "effort": "max"
     },
     "ds": {
