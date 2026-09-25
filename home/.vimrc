@@ -492,10 +492,17 @@ xnoremap <Del> "_d
 " or every mark would wait out 'timeoutlen'.
 nnoremap gm m
 
+nnoremap <silent> <C-s> :w<CR>
+inoremap <silent> <C-s> <Esc>:w<CR>
 nnoremap <silent> <Esc> :nohlsearch<CR>
-nnoremap <silent> <leader>qq :qa<CR>
+nnoremap <silent> <leader>q :qa<CR>
 nnoremap <silent> <leader>us :setlocal spell! spell?<CR>
 nnoremap <silent> <leader>uw :setlocal wrap! wrap?<CR>
+" Keep the selection after indenting, so repeated < and > keep shifting it. A
+" plain <gv flickers the cursorline: Vim redraws between the keys of a mapping,
+" in the Normal mode between < and gv. One :normal! runs both without a redraw.
+xnoremap <silent> < <Cmd>execute 'normal!' v:count1 . '<gv'<CR>
+xnoremap <silent> > <Cmd>execute 'normal!' v:count1 . '>gv'<CR>
 
 " Completion. noNewlineInCompletion has to stay set: left off, the plugin binds
 " <CR> per buffer to accept and open a line, and a buffer-local mapping wins

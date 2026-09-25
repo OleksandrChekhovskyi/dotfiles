@@ -625,9 +625,17 @@ local map = vim.keymap.set
 -- General
 map({ "n", "i" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
-map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
+map("n", "<leader>q", "<cmd>qa<cr>", { desc = "Quit all" })
 map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
 map("n", "<leader>uw", "<cmd>setlocal wrap! wrap?<cr>", { desc = "Toggle word wrap" })
+-- A plain "<gv" flickers the cursorline: Nvim redraws between the keys of a
+-- mapping, in the Normal mode between < and gv. One :normal! runs both without.
+map("x", "<", function()
+  vim.cmd("normal! " .. vim.v.count1 .. "<gv")
+end, { desc = "Indent left (keep selection)" })
+map("x", ">", function()
+  vim.cmd("normal! " .. vim.v.count1 .. ">gv")
+end, { desc = "Indent right (keep selection)" })
 
 -- A stray q must not start recording, and nothing else may start with q: a
 -- mapping like q: would make every buffer-local close below wait out
