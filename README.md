@@ -20,6 +20,18 @@ Existing files move to `~/.dotfiles-backup/<timestamp>/`; reruns skip correct sy
 
 For example, `home.freebsd/.config/example` overrides `home/.config/example` on FreeBSD.
 
+## Terminal keys
+
+tmux binds Alt+hjkl to panes and Alt+Arrow to windows. On macOS, Alacritty sends the same
+keys for Cmd, which is where Linux has Alt on a keyboard switched between PC and Mac modes.
+Ctrl+' types a backtick on both.
+
+On macOS, move the "Hide alacritty" menu shortcut off Cmd+H so Alacritty receives it:
+
+```sh
+defaults write org.alacritty NSUserKeyEquivalents -dict-add "Hide alacritty" '@~^$h'
+```
+
 ## Plugins and parsers
 
 Editor plugins and Neovim's Tree-sitter parsers are installed outside this repository by two
