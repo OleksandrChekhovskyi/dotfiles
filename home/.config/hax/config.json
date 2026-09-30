@@ -16,7 +16,7 @@
     "models": {
       "codex": {
         "gpt-6-astra": { "limit": { "context": 872000 } },
-        "gpt-6-sol": { "limit": { "context": 872000 } },
+        "gpt-6.1-sol": { "limit": { "context": 872000 } },
         "gpt-6-luna": { "limit": { "context": 872000 } }
       }
     }
@@ -35,7 +35,7 @@
     "sol": {
       "tint": "teal",
       "provider": "codex",
-      "model": "gpt-6-sol",
+      "model": "gpt-6.1-sol",
       "effort": "high"
     },
     "luna": {
