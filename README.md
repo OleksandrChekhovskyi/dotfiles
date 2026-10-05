@@ -24,7 +24,7 @@ For example, `home.freebsd/.config/example` overrides `home/.config/example` on 
 
 tmux binds Alt+hjkl to panes and Alt+Arrow to windows. On macOS, Alacritty sends the same
 keys for Cmd, which is where Linux has Alt on a keyboard switched between PC and Mac modes.
-Ctrl+' types a backtick on both.
+Ctrl+' types a backtick on both, and Ctrl+Shift+C / Ctrl+Shift+V copy and paste on both.
 
 On macOS, move the "Hide alacritty" menu shortcut off Cmd+H so Alacritty receives it:
 

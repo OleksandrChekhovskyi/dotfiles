@@ -21,6 +21,9 @@ bindings = [
 	{ key = "Return", mods = "Shift", chars = "\n" },
 	{ key = "K", mods = "Control|Shift", chars = "\f" },
 	{ key = "N", mods = "Control|Shift", action = "CreateNewWindow" },
+	# Linux/BSD defaults, repeated so macOS copies and pastes with them too (besides Cmd+C/V).
+	{ key = "C", mods = "Control|Shift", action = "Copy" },
+	{ key = "V", mods = "Control|Shift", action = "Paste" },
 	# Ctrl+' stands in for the ` / ~ key missing on function-rowless keyboards.
 	# The shifted half needs two bindings: it arrives as `"` on Linux/BSD, `'` on macOS.
 	{ key = "'",  mods = "Control",       chars = "`" },
