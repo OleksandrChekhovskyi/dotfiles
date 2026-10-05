@@ -208,21 +208,36 @@ vim.cmd.colorscheme("catppuccin-nvim")
 require("mini.bufremove").setup()
 
 -- Buffer/tab line
+local function is_bufferline_buf(bufnr)
+  return vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == ""
+end
 require("bufferline").setup({
   options = {
-    always_show_bufferline = false,
+    -- Visibility is managed below so that extra tab pages (e.g. Diffview) also show it.
+    auto_toggle_bufferline = false,
     close_command = "lua MiniBufremove.wipeout(%d, false)",
     right_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
     middle_mouse_command = "lua MiniBufremove.wipeout(%d, false)",
-    custom_filter = function(bufnr)
-      return vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == ""
-    end,
+    custom_filter = is_bufferline_buf,
     offsets = {
       { filetype = "neo-tree", text = "File Explorer", highlight = "Directory", separator = true },
       { filetype = "DiffviewFiles", text = "Diffview", highlight = "Directory", separator = true },
     },
   },
 })
+
+-- Show the bufferline when there are multiple buffers or multiple tab pages.
+local function update_showtabline()
+  local bufs = vim.tbl_filter(is_bufferline_buf, vim.api.nvim_list_bufs())
+  local multiple = #bufs > 1 or #vim.api.nvim_list_tabpages() > 1
+  vim.o.showtabline = multiple and 2 or 0
+end
+vim.api.nvim_create_autocmd({ "BufAdd", "BufDelete", "TabNew", "TabClosed", "VimEnter" }, {
+  group = vim.api.nvim_create_augroup("BufferlineVisibility", { clear = true }),
+  -- Deferred so buflisted/buftype and the buffer and tab lists have settled.
+  callback = function() vim.schedule(update_showtabline) end,
+})
+update_showtabline()
 
 -- File tree explorer
 require("neo-tree").setup({
