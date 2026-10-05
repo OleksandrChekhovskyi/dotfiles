@@ -375,6 +375,64 @@ end
 
 -- Git diff viewer
 local diffview_actions = require("diffview.actions")
+
+-- Map a line in `old` to the matching line in `new`. A line inside a changed hunk keeps its
+-- offset within the hunk, clamped to the replacement lines.
+local function map_line_through_diff(old, new, row)
+  local hunks = vim.text.diff(
+    table.concat(old, "\n") .. "\n",
+    table.concat(new, "\n") .. "\n",
+    { result_type = "indices" }
+  )
+  ---@cast hunks integer[][]
+  local target = row
+  for _, hunk in ipairs(hunks) do
+    local old_start, old_count, new_start, new_count = unpack(hunk)
+    if row < old_start or (old_count == 0 and row == old_start) then
+      break
+    end
+    if row < old_start + old_count then
+      target = new_start + math.min(row - old_start, math.max(new_count - 1, 0))
+      break
+    end
+    target = target + new_count - old_count
+  end
+  return math.max(1, math.min(target, #new))
+end
+
+-- Capture the right-hand diff window's lines and cursor, if gf will open the file it shows.
+local function diffview_goto_anchor()
+  local view = require("diffview.lib").get_current_view() --[[@as DiffView|FileHistoryView?]]
+  if not view or not view.cur_layout or view:infer_cur_file() ~= view.cur_entry then
+    return nil
+  end
+  local main = view.cur_layout:get_main_win()
+  local file = main:is_valid() and main.file
+  if not file or not file.bufnr or not vim.api.nvim_buf_is_loaded(file.bufnr) then
+    return nil
+  end
+  return {
+    path = vim.uv.fs_realpath(file.absolute_path),
+    lines = vim.api.nvim_buf_get_lines(file.bufnr, 0, -1, false),
+    cursor = vim.api.nvim_win_get_cursor(main.id),
+  }
+end
+
+-- Diffview's gf reuses the cursor row of the right-hand diff window, which may show a commit or
+-- the index rather than the working tree. Anchor the row through a diff of the two versions.
+local function diffview_goto_file()
+  local anchor = diffview_goto_anchor()
+
+  diffview_actions.goto_file_edit()
+
+  if anchor and anchor.path
+    and vim.uv.fs_realpath(vim.api.nvim_buf_get_name(0)) == anchor.path then
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local row = map_line_through_diff(anchor.lines, lines, anchor.cursor[1])
+    vim.api.nvim_win_set_cursor(0, { row, anchor.cursor[2] })
+  end
+end
+
 require("diffview").setup({
   enhanced_diff_hl = true,
   show_help_hints = false,
@@ -401,14 +459,17 @@ require("diffview").setup({
       { "n", "za", "za", { desc = "Toggle fold" } },
       { "n", "zi", "zi", { desc = "Toggle foldenable" } },
       { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
+      { "n", "gf", diffview_goto_file, { desc = "Open the file at the matching line" } },
     },
     file_panel = {
       { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
       { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
+      { "n", "gf", diffview_goto_file, { desc = "Open the file at the matching line" } },
     },
     file_history_panel = {
       { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
       { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
+      { "n", "gf", diffview_goto_file, { desc = "Open the file at the matching line" } },
     },
   },
 })
@@ -558,6 +619,7 @@ do
   vim.lsp.config("lua_ls", {
     settings = {
       Lua = {
+        runtime = { version = "LuaJIT" },
         workspace = {
           library = vim.api.nvim_get_runtime_file("", true),
           checkThirdParty = false,
