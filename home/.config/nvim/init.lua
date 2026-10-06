@@ -226,13 +226,46 @@ require("bufferline").setup({
   },
 })
 
--- Show the bufferline when there are multiple buffers or multiple tab pages.
+-- Read-only views (the ones q closes below): they pop up over the edited files rather than
+-- being part of the layout, so on their own they should not bring the bufferline on screen.
+local popup_filetypes = { qf = true, help = true, man = true, checkhealth = true }
+
+-- Windows that are part of the layout: neither floats (pickers, hover popups), which
+-- nvim_list_wins() includes, nor popup views. A terminal split is layout, quickfix is not.
+local function has_layout_windows()
+  local count = 0
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_config(win).relative == "" then
+      local buf = vim.api.nvim_win_get_buf(win)
+      if not popup_filetypes[vim.bo[buf].filetype] then
+        count = count + 1
+        if count > 1 then
+          return true
+        end
+      end
+    end
+  end
+  return false
+end
+
+-- Show the bufferline once the session is more than one file in one window: several buffers,
+-- tab pages, or a layout of several windows (a side panel is just one of those).
 local function update_showtabline()
   local bufs = vim.tbl_filter(is_bufferline_buf, vim.api.nvim_list_bufs())
-  local multiple = #bufs > 1 or #vim.api.nvim_list_tabpages() > 1
+  local multiple = #bufs > 1 or #vim.api.nvim_list_tabpages() > 1 or has_layout_windows()
   vim.o.showtabline = multiple and 2 or 0
 end
-vim.api.nvim_create_autocmd({ "BufAdd", "BufDelete", "TabNew", "TabClosed", "VimEnter" }, {
+vim.api.nvim_create_autocmd({
+  "BufAdd",
+  "BufDelete",
+  "BufWinEnter",
+  "FileType",
+  "TabNew",
+  "TabClosed",
+  "WinNew",
+  "WinClosed",
+  "VimEnter",
+}, {
   group = vim.api.nvim_create_augroup("BufferlineVisibility", { clear = true }),
   -- Deferred so buflisted/buftype and the buffer and tab lists have settled.
   callback = function() vim.schedule(update_showtabline) end,
