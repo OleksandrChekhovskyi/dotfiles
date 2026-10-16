@@ -240,6 +240,31 @@ function! s:ToggleLoclist() abort
     endif
 endfunction
 
+" Netrw may suffix a name with a type marker (*, @, ...) and a symlink target.
+function! s:ExploreFile() abort
+    let l:name = expand('%:t')
+    let w:vimrc_explore_from = bufnr()
+    Explore
+    if !empty(l:name)
+        call search('\V\^' . escape(l:name, '\') . '\[*@=|]\=\%(\s\+-->\.\*\)\=\$', 'cw')
+    endif
+endfunction
+
+" :Rexplore only works in windows netrw has opened a file from, and # changes
+" as directories are browsed.
+function! s:ExploreReturn() abort
+    let l:buf = get(w:, 'vimrc_explore_from', -1)
+    if l:buf == bufnr() || !buflisted(l:buf)
+        let l:buf = bufnr('#')
+    endif
+    " vim . leaves its directory buffer listed.
+    if buflisted(l:buf) && !isdirectory(bufname(l:buf))
+        execute 'buffer' l:buf
+    else
+        enew
+    endif
+endfunction
+
 " File location for sharing, relative to the git work tree so it means the same
 " in another checkout, or to the working directory outside one. 5yrr spans a
 " range of lines.
@@ -358,6 +383,9 @@ augroup vimrc
     autocmd BufWinEnter fugitive://*
                 \ nnoremap <buffer> <silent> q :<C-u>call <SID>CloseView()<CR>
     autocmd WinEnter,BufEnter * call s:DiffQuitKey()
+    " nowait, as netrw also maps qf, qb, qF and qL.
+    autocmd FileType netrw
+                \ nnoremap <buffer> <nowait> <silent> q :<C-u>call <SID>ExploreReturn()<CR>
     " <Esc> is otherwise inert in the command-line window.
     autocmd CmdwinEnter * nnoremap <buffer> <silent> <Esc> :quit<CR>
 
@@ -418,6 +446,8 @@ if executable('rg')
 endif
 
 let g:gitgutter_map_keys = 0
+
+let g:netrw_banner = 0
 
 " Read when the package loads, which is after this file. Servers come from the
 " system, so ignoreMissingServer keeps a machine without one quiet.
@@ -541,6 +571,9 @@ nnoremap <silent> <leader><tab>f :tabfirst<CR>
 nnoremap <silent> <leader><tab>l :tablast<CR>
 nnoremap <silent> [t :tabprevious<CR>
 nnoremap <silent> ]t :tabnext<CR>
+
+" Inside a listing, netrw's own - goes up a level.
+nnoremap <silent> - :<C-u>call <SID>ExploreFile()<CR>
 
 " Quickfix and location list; LSP references and diagnostics land in the latter.
 nnoremap <silent> [q :cprevious<CR>
