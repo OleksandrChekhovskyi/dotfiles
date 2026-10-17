@@ -42,19 +42,19 @@
       "tint": "violet",
       "provider": "codex",
       "model": "gpt-6-luna",
-      "effort": "max"
+      "effort": "high"
     },
     "ds": {
       "tint": "sage",
       "provider": "openrouter",
-      "model": "deepseek/deepseek-v4.1-flash",
-      "effort": "max"
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "effort": "high"
     },
     "glm": {
       "tint": "rose",
       "provider": "openrouter",
-      "model": "z-ai/glm-5.3-flash",
-      "effort": "max"
+      "model": "z-ai/glm-5.3",
+      "effort": "high"
     }
   }
 }
