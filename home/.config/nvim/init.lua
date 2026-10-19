@@ -180,12 +180,30 @@ require("catppuccin").setup({
   },
   no_italic = true,
   custom_highlights = function(colors)
+    local tint = function(color, amount)
+      return require("catppuccin.utils.colors").blend(color, colors.base, amount)
+    end
     return {
       Folded = { bg = colors.surface0, fg = colors.overlay0 },
       FzfLuaBorder = { fg = colors.surface2, bg = colors.base },
       MsgArea = { fg = colors.text, bg = colors.crust },
-      DiffChange = { bg = "#3a3529" },
-      DiffText = { bg = "#4d4632" },
+      -- Softer diff backgrounds keep syntax colors readable; DiffText marks the changed words.
+      -- Yellow blended into the bluish base turns brown and close to red, so the change
+      -- colors are picked directly with an OKLCH hue of about 92-95.
+      DiffAdd = { bg = tint(colors.green, 0.14) },
+      DiffChange = { bg = "#322e1c" },
+      DiffText = { bg = "#473c1c" },
+      DiffDelete = { bg = tint(colors.red, 0.14) },
+      DiffviewDiffAddAsDelete = { bg = tint(colors.red, 0.14) },
+      DiffviewFiller = { fg = colors.surface1 },
+      GitSignsAdd = { fg = tint(colors.green, 0.70) },
+      GitSignsChange = { fg = "#b79c46" },
+      GitSignsDelete = { fg = tint(colors.red, 0.70) },
+      GitSignsStagedAdd = { fg = tint(colors.green, 0.40) },
+      GitSignsStagedChange = { fg = "#726231" },
+      GitSignsStagedDelete = { fg = tint(colors.red, 0.40) },
+      GitSignsStagedChangedelete = { link = "GitSignsStagedChange" },
+      GitSignsStagedTopdelete = { link = "GitSignsStagedDelete" },
       YankHighlight = { bg = colors.surface2 },
       BlinkIndent = { fg = colors.surface0 },
       BlinkIndentScope = { fg = colors.surface1 },
@@ -499,6 +517,9 @@ require("diffview").setup({
     diff_buf_win_enter = function(_, winid)
       vim.wo[winid].cursorlineopt = "number"
       vim.wo[winid].fillchars = "diff:\xc2\xb7,fold: "
+      -- Filler lines use DiffDelete; diffview's dim group also colors inline deleted text.
+      vim.wo[winid].winhighlight = vim.wo[winid].winhighlight
+        :gsub("DiffDelete:DiffviewDiffDeleteDim", "DiffDelete:DiffviewFiller")
     end,
   },
   keymaps = {
