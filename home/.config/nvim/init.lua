@@ -1270,6 +1270,32 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- Only :edit reuses the initial empty buffer; switching to an added buffer leaves it behind.
+local function is_unused_buffer(buf)
+  return vim.api.nvim_buf_is_valid(buf)
+    and vim.bo[buf].buflisted
+    and vim.bo[buf].buftype == ""
+    and not vim.bo[buf].modified
+    and vim.api.nvim_buf_get_name(buf) == ""
+    and vim.api.nvim_buf_line_count(buf) == 1
+    and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
+    and vim.fn.undotree(buf).seq_last == 0 -- 'modified' misses a draft undone to empty
+end
+vim.api.nvim_create_autocmd("BufHidden", {
+  group = vim.api.nvim_create_augroup("nvim-wipe-unused-buffer", { clear = true }),
+  callback = function(event)
+    if not is_unused_buffer(event.buf) then
+      return
+    end
+    -- A buffer can't be wiped while it is being hidden.
+    vim.schedule(function()
+      if is_unused_buffer(event.buf) and #vim.fn.win_findbuf(event.buf) == 0 then
+        vim.api.nvim_buf_delete(event.buf, {})
+      end
+    end)
+  end,
+})
+
 -- Auto-reload buffers when external changes are detected.
 -- autoread alone only reloads on :commands; checktime is needed to actually poll.
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
