@@ -95,8 +95,8 @@
           "ref": "refs/heads/main"
         },
         "diffview.nvim": {
-          "url": "https://github.com/dlyongemallo/diffview-plus.nvim",
-          "ref": "refs/heads/main"
+          "url": "https://github.com/OleksandrChekhovskyi/diffview-plus.nvim",
+          "ref": "refs/heads/nvim-ide"
         },
         "gitsigns.nvim": {
           "url": "https://github.com/lewis6991/gitsigns.nvim",

@@ -737,7 +737,9 @@ end
 require("diffview").setup({
   enhanced_diff_hl = true,
   show_help_hints = false,
+  compact_panel_headers = true,
   file_history_panel = {
+    win_config = { position = "bottom", height = 12 },
     log_options = {
       git = {
         single_file = { max_count = 64 },
@@ -746,7 +748,7 @@ require("diffview").setup({
     },
   },
   file_panel = {
-    win_config = { position = "bottom", height = 16 },
+    win_config = { position = "bottom", height = 12 },
   },
   hooks = {
     diff_buf_win_enter = function(_, winid)

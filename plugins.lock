@@ -26,9 +26,9 @@
       "url": "https://github.com/gbprod/cutlass.nvim"
     },
     "diffview.nvim": {
-      "commit": "be86a001f13b4d307814bd6e06eac429a2777ae8",
-      "ref": "refs/heads/main",
-      "url": "https://github.com/dlyongemallo/diffview-plus.nvim"
+      "commit": "ee09a57ac8cc23b864505f040e918b65c556979c",
+      "ref": "refs/heads/nvim-ide",
+      "url": "https://github.com/OleksandrChekhovskyi/diffview-plus.nvim"
     },
     "fzf-lua": {
       "commit": "05e44d38de0a79c11fba5f7bf8138791b1dbdd1e",
