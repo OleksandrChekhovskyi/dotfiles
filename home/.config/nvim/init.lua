@@ -41,9 +41,6 @@ vim.opt.signcolumn = "yes"
 vim.opt.cursorline = true
 vim.opt.wrap = false
 vim.opt.textwidth = 0
-vim.opt.laststatus = 1
--- Statusline ruler: screen column only, so tabs count as 'tabstop' spaces.
-vim.opt.rulerformat = "%15(%l,%v%= %P%)%<"
 vim.opt.fillchars:append({ eob = " " })
 vim.opt.scrolloff = 5
 vim.opt.sidescrolloff = 8
@@ -77,6 +74,228 @@ vim.opt.timeoutlen = 300
 -- Diff/Folding
 vim.opt.diffopt:append("context:10")
 vim.opt.foldminlines = 10
+
+--------------------------------------------------------------------------------
+-- Diagnostics
+--------------------------------------------------------------------------------
+-- Icons for the gutter signs and the statusline counts. The default status format would
+-- print "<icon>:2", in no fixed severity order.
+do
+  local severity = vim.diagnostic.severity
+  local icons = {
+    [severity.ERROR] = "\xef\x81\x97", -- error circle with X
+    [severity.WARN] = "\xef\x81\xb1", -- warning triangle
+    [severity.INFO] = "\xef\x81\x9a", -- info circle
+    [severity.HINT] = "\xef\x83\xab", -- lightbulb
+  }
+  local highlights = {
+    [severity.ERROR] = "DiagnosticSignError",
+    [severity.WARN] = "DiagnosticSignWarn",
+    [severity.INFO] = "DiagnosticSignInfo",
+    [severity.HINT] = "DiagnosticSignHint",
+  }
+  vim.diagnostic.config({
+    signs = { text = icons },
+    status = {
+      format = function(counts)
+        local parts = {}
+        for level = severity.ERROR, severity.HINT do
+          local count = counts[level]
+          if count then
+            table.insert(parts, ("%%#%s#%s %d"):format(highlights[level], icons[level], count))
+          end
+        end
+        return table.concat(parts, " ")
+      end,
+    },
+  })
+end
+
+--------------------------------------------------------------------------------
+-- Statusline and messages
+--------------------------------------------------------------------------------
+-- With cmdheight=0, typing : raises 'cmdheight' to 1 while the cmdline is open, which
+-- moves the statusline up a row; UI2 has no overlay cmdline.
+vim.opt.laststatus = 3
+vim.opt.cmdheight = 0
+
+-- Messages go to a float above the statusline rather than growing the cmdline, shell
+-- output to the pager. Nvim 0.12 reads msg.target, 0.13 reads targets.default. 0.13
+-- rejects the 0.12 timeout keys, so the timeouts stay at their defaults.
+require("vim._core.ui2").enable({
+  msg = {
+    target = "msg",
+    targets = {
+      default = "msg",
+      shell_cmd = "pager",
+      shell_out = "pager",
+      shell_err = "pager",
+    },
+  },
+})
+
+-- With cmdheight=0, UI2 drops the mode, showcmd, ruler, and search count. The statusline
+-- shows all but showcmd, whose pending keys would only flash by.
+vim.opt.showmode = false
+vim.opt.showcmd = false
+
+local statusline_modes = {
+  n = { "NORMAL", "StatusLineNormal" },
+  i = { "INSERT", "StatusLineInsert" },
+  R = { "REPLACE", "StatusLineReplace" },
+  v = { "VISUAL", "StatusLineVisual" },
+  V = { "V-LINE", "StatusLineVisual" },
+  ["\22"] = { "V-BLOCK", "StatusLineVisual" },
+  s = { "SELECT", "StatusLineVisual" },
+  S = { "S-LINE", "StatusLineVisual" },
+  ["\19"] = { "S-BLOCK", "StatusLineVisual" },
+  c = { "COMMAND", "StatusLineCommand" },
+  t = { "TERMINAL", "StatusLineTerminal" },
+}
+
+-- Centered in a fixed width, so that the rest of the line stays put across modes.
+local function statusline_mode()
+  local mode = statusline_modes[vim.api.nvim_get_mode().mode:sub(1, 1)] or statusline_modes.n
+  local label, group = unpack(mode)
+  local width = 8
+  local pad = math.floor((width - #label) / 2)
+  local text = (" "):rep(pad) .. label .. (" "):rep(width - #label - pad)
+  return "%#" .. group .. "# " .. text .. " %*"
+end
+
+-- Special buffers have no file of their own, so they show the working directory's branch,
+-- which keeps the line steady when moving between them and files.
+local function statusline_branch()
+  local head
+  if vim.bo.buftype == "" then
+    head = vim.b.gitsigns_head
+  else
+    head = vim.g.gitsigns_head
+  end
+  if not head or head == "" then
+    return ""
+  end
+  -- Escaped, since the result is evaluated: Git allows names such as "%{luaeval(...)}".
+  return "%#StatusLineBranch#\xee\x9c\xa5 " .. head:gsub("%%", "%%%%") .. "%*"
+end
+
+-- The icon bufferline and neo-tree show for the file. Special buffers get their filetype's
+-- icon, if mini.icons has one other than its generic default.
+local function statusline_icon()
+  local name = vim.api.nvim_buf_get_name(0)
+  local icon, group, is_default
+  if vim.bo.buftype == "" then
+    if name == "" then
+      return ""
+    end
+    icon, group = MiniIcons.get("file", name)
+  elseif vim.bo.filetype ~= "" then
+    icon, group, is_default = MiniIcons.get("filetype", vim.bo.filetype)
+  end
+  if not icon or is_default then
+    return ""
+  end
+  return "%#" .. group .. "#" .. icon .. "%* "
+end
+
+-- The exit code of a finished terminal job, which its buffer name does not show.
+local function statusline_exit_code()
+  if vim.bo.buftype ~= "terminal" or vim.bo.channel == 0 then
+    return ""
+  end
+  local code = vim.api.nvim_get_chan_info(vim.bo.channel).exitcode
+  return code and code >= 0 and (" [Exit: " .. code .. "]") or ""
+end
+
+-- "[current/total]" while search matches are highlighted. This is the count Nvim computes
+-- for search commands ('shortmess' without "S"), as of the last n, N, *, or /: recounting
+-- on every redraw would rescan the buffer on every cursor move.
+local function statusline_search_count()
+  if vim.v.hlsearch == 0 then
+    return ""
+  end
+  local ok, count = pcall(vim.fn.searchcount, { recompute = false })
+  if not ok or not count.total or count.total == 0 then
+    return ""
+  end
+  -- Past 'maxsearchcount', both numbers stop at the limit + 1.
+  local function capped(n)
+    return count.incomplete == 2 and n > count.maxcount and (">" .. count.maxcount) or n
+  end
+  local current = count.incomplete == 1 and "?" or capped(count.current)
+  return ("[%s/%s]"):format(current, capped(count.total))
+end
+
+-- Nvim keeps one count for all buffers, so recount on entering a buffer rather than show
+-- the previous one's. Deferred until the buffer's cursor position has been restored. The
+-- timeout bounds the scan in large files.
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = vim.api.nvim_create_augroup("nvim-statusline-search-count", { clear = true }),
+  callback = function()
+    vim.schedule(function()
+      if vim.v.hlsearch == 1 then
+        pcall(vim.fn.searchcount, { recompute = true, timeout = 50 })
+        vim.cmd.redrawstatus()
+      end
+    end)
+  end,
+})
+
+-- Added, changed, and removed line counts from gitsigns, in its dimmed sign colors.
+local function statusline_diff()
+  local status = vim.b.gitsigns_status_dict
+  if not status then
+    return ""
+  end
+  local parts = {}
+  for _, item in ipairs({
+    { status.added, "+", "GitSignsAdd" },
+    { status.changed, "~", "GitSignsChange" },
+    { status.removed, "-", "GitSignsDelete" },
+  }) do
+    local count, sign, group = unpack(item)
+    if count and count > 0 then
+      table.insert(parts, "%#" .. group .. "#" .. sign .. count)
+    end
+  end
+  return #parts > 0 and (table.concat(parts, " ") .. "%*") or ""
+end
+
+-- Screen column only, so tabs count as 'tabstop' spaces. Padded to the widest line number
+-- and a three-digit column, so that moving the cursor does not shift the chunks before
+-- it; %P is always three cells.
+local function statusline_position()
+  local width = #tostring(vim.api.nvim_buf_line_count(0)) + 4
+  return "%-" .. width .. "(%l:%v%) %P"
+end
+
+local function statusline_join(chunks)
+  local present = vim.tbl_filter(function(chunk) return chunk ~= "" end, chunks)
+  return table.concat(present, "  ")
+end
+
+-- A global, since 'statusline' can call Lua only through v:lua. It has no timers, so an
+-- idle Nvim stays idle. With laststatus=3 it describes the current window, floats
+-- included. Special buffers show their raw names, which already say what they are:
+-- term:// with the directory and command, diffview:// with the revision and path.
+function _G.Statusline()
+  local recording = vim.fn.reg_recording()
+  return statusline_join({
+    statusline_mode(),
+    statusline_branch(),
+    -- The %( %) group drops its leading space when there are no flags.
+    "%<" .. statusline_icon() .. "%f%( %h%w%m%r%)" .. statusline_exit_code(),
+  }) .. "%=" .. statusline_join({
+    recording ~= "" and ("%#StatusLineRecording#@" .. recording .. "%*") or "",
+    statusline_search_count(),
+    vim.diagnostic.status(),
+    statusline_diff(),
+    statusline_position(),
+  })
+end
+vim.opt.statusline = "%!v:lua.Statusline()"
+-- The qf ftplugin would set a window-local statusline, replacing this one in quickfix.
+vim.g.qf_disable_statusline = 1
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -187,6 +406,17 @@ require("catppuccin").setup({
       Folded = { bg = colors.surface0, fg = colors.overlay0 },
       FzfLuaBorder = { fg = colors.surface2, bg = colors.base },
       MsgArea = { fg = colors.text, bg = colors.crust },
+      -- Mode badges: Normal is muted, so that only the other modes stand out; those show
+      -- their color on a faint tint of it, about as dark as the Normal badge.
+      StatusLineNormal = { fg = colors.overlay1, bg = colors.surface0 },
+      StatusLineInsert = { fg = colors.green, bg = tint(colors.green, 0.22) },
+      StatusLineVisual = { fg = colors.mauve, bg = tint(colors.mauve, 0.22) },
+      StatusLineReplace = { fg = colors.red, bg = tint(colors.red, 0.22) },
+      StatusLineCommand = { fg = colors.peach, bg = tint(colors.peach, 0.22) },
+      StatusLineTerminal = { fg = colors.teal, bg = tint(colors.teal, 0.22) },
+      -- A hue no mode badge or diff sign uses, dimmed to keep the file name primary.
+      StatusLineBranch = { fg = tint(colors.lavender, 0.75) },
+      StatusLineRecording = { fg = colors.red },
       -- Softer diff backgrounds keep syntax colors readable; DiffText marks the changed words.
       -- Yellow blended into the bluish base turns brown and close to red, so the change
       -- colors are picked directly with an OKLCH hue of about 92-95.
@@ -204,6 +434,11 @@ require("catppuccin").setup({
       GitSignsStagedDelete = { fg = tint(colors.red, 0.40) },
       GitSignsStagedChangedelete = { link = "GitSignsStagedChange" },
       GitSignsStagedTopdelete = { link = "GitSignsStagedDelete" },
+      -- Diagnostic icons, in the gutter and the statusline, dimmed like the git signs.
+      DiagnosticSignError = { fg = tint(colors.red, 0.70) },
+      DiagnosticSignWarn = { fg = "#b79c46" },
+      DiagnosticSignInfo = { fg = tint(colors.sky, 0.70) },
+      DiagnosticSignHint = { fg = tint(colors.teal, 0.70) },
       YankHighlight = { bg = colors.surface2 },
       BlinkIndent = { fg = colors.surface0 },
       BlinkIndentScope = { fg = colors.surface1 },
@@ -684,13 +919,18 @@ end
 do
   vim.lsp.config("*", { capabilities = require("blink.cmp").get_lsp_capabilities() })
 
-  -- Resolve vim.* and plugin modules; upstream lua_ls sets no workspace library.
+  -- Resolve vim.* and plugin modules; upstream lua_ls sets no workspace library. The config
+  -- directory is left out: its init.lua links to the dotfiles copy being edited, and loading
+  -- both would report every global in it as a duplicate.
+  local config_dir = vim.fn.stdpath("config")
   vim.lsp.config("lua_ls", {
     settings = {
       Lua = {
         runtime = { version = "LuaJIT" },
         workspace = {
-          library = vim.api.nvim_get_runtime_file("", true),
+          library = vim.tbl_filter(function(path)
+            return path ~= config_dir
+          end, vim.api.nvim_get_runtime_file("", true)),
           checkThirdParty = false,
         },
       },
@@ -755,7 +995,8 @@ local map = vim.keymap.set
 
 -- General
 map({ "n", "i" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
-map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
+-- Clearing the highlight does not redraw the statusline search count on its own.
+map("n", "<Esc>", "<cmd>nohlsearch<bar>redrawstatus<cr>", { desc = "Clear search highlight" })
 map("n", "<leader>q", "<cmd>qa<cr>", { desc = "Quit all" })
 map("n", "<leader>us", "<cmd>setlocal spell! spell?<cr>", { desc = "Toggle spell check" })
 map("n", "<leader>uw", "<cmd>setlocal wrap! wrap?<cr>", { desc = "Toggle word wrap" })
