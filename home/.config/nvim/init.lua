@@ -738,6 +738,8 @@ require("diffview").setup({
   enhanced_diff_hl = true,
   show_help_hints = false,
   compact_panel_headers = true,
+  -- Open every file at its first change rather than on the line followed from the last one.
+  view = { cursor_carry = false },
   file_history_panel = {
     win_config = { position = "bottom", height = 12 },
     log_options = {

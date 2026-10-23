@@ -26,7 +26,7 @@
       "url": "https://github.com/gbprod/cutlass.nvim"
     },
     "diffview.nvim": {
-      "commit": "ee09a57ac8cc23b864505f040e918b65c556979c",
+      "commit": "46f8eea3299abfb3f9b5f2669bcc8f0e681baa5a",
       "ref": "refs/heads/nvim-ide",
       "url": "https://github.com/OleksandrChekhovskyi/diffview-plus.nvim"
     },
