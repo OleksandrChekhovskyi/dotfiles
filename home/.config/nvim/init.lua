@@ -756,6 +756,9 @@ require("diffview").setup({
     diff_buf_win_enter = function(_, winid)
       vim.wo[winid].cursorlineopt = "number"
       vim.wo[winid].fillchars = "diff:\xc2\xb7,fold: "
+      -- Show the whole file, as VS Code does; zi collapses the unchanged regions.
+      vim.wo[winid].foldenable = false
+      vim.wo[winid].foldcolumn = "0"
       -- Filler lines use DiffDelete; diffview's dim group also colors inline deleted text.
       vim.wo[winid].winhighlight = vim.wo[winid].winhighlight
         :gsub("DiffDelete:DiffviewDiffDeleteDim", "DiffDelete:DiffviewFiller")
@@ -766,6 +769,10 @@ require("diffview").setup({
       { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close diffview" } },
       { "n", "za", "za", { desc = "Toggle fold" } },
       { "n", "zi", "zi", { desc = "Toggle foldenable" } },
+      -- The inline layout is not in diff mode, so built-in ]c / [c do nothing there; diffview
+      -- maps them to its own hunk jumps instead, which remap = true lets these reach.
+      { "n", "<C-n>", "]c", { remap = true, desc = "Next hunk" } },
+      { "n", "<C-p>", "[c", { remap = true, desc = "Previous hunk" } },
       { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
       { "n", "gf", diffview_goto_file, { desc = "Open the file at the matching line" } },
     },
