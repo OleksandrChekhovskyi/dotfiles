@@ -442,6 +442,7 @@ require("catppuccin").setup({
       YankHighlight = { bg = colors.surface2 },
       BlinkIndent = { fg = colors.surface0 },
       BlinkIndentScope = { fg = colors.surface1 },
+      NeoTreeIndentMarker = { fg = colors.surface0 },
       ["@markup.raw"] = { fg = colors.lavender },
       ["@markup.raw.block"] = { fg = colors.lavender },
     }
