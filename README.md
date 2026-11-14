@@ -125,3 +125,35 @@ export DOTFILES_PROMPT_HOST_COLOR='1;31'  # bright red
 Common values include blue (`1;34`), magenta (`1;35`), and cyan (`1;36`). Exported shell
 variables are inherited by child processes; system services need environment configuration through
 their service manager instead.
+
+## Playwright CLI
+
+Global npm packages install under `~/.local`, whose `bin/` is on `PATH`. `~/.npmrc` also skips
+versions published less than 3 days ago, so a compromised release is likely pulled before it
+reaches the machine; pass `--min-release-age=0` to take a fresh one anyway.
+
+```sh
+npm install -g @playwright/cli@latest
+```
+
+Link its agent skill into the shared and Claude Code skill directories once per machine. The links
+point into the npm package, so the skill follows every CLI upgrade:
+
+```sh
+for dir in ~/.agents/skills ~/.claude/skills; do
+  mkdir -p "$dir"
+  ln -sfn ~/.local/lib/node_modules/@playwright/cli/skills/playwright-cli "$dir/playwright-cli"
+done
+```
+
+`~/.playwright/cli.config.json` launches the system Chromium or Chrome through
+`playwright-chromium`, with Chromium's sandbox on, so no Playwright browser download is needed.
+Its `show` dashboard only opens in Playwright's own browsers, so run `playwright-dashboard` instead
+to open it in the default browser until Ctrl-C. Snapshots and logs land in `.playwright-cli/` under
+the current directory, which the global Git ignore excludes.
+
+Where the browser lookup falls short, set the binary in `~/.profile.local`:
+
+```sh
+export PLAYWRIGHT_CHROMIUM=/opt/chromium/chrome
+```

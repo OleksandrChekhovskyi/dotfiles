@@ -1,0 +1,9 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "launchOptions": {
+      "executablePath": "../.local/bin/playwright-chromium",
+      "chromiumSandbox": true
+    }
+  }
+}

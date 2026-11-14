@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Serves the playwright-cli dashboard on localhost and opens it in the default browser, because
+# `playwright-cli show` only opens its window in Playwright's own Chromium or Google Chrome.
+# Stays in the foreground, and Ctrl-C stops the dashboard. Arguments are passed on to
+# `playwright-cli show`, e.g. -s=name to reveal a session.
+
+open_url() {
+  case $(uname -s) in
+    Darwin) open "$1" ;;
+    *) xdg-open "$1" ;;
+  esac
+}
+
+stop_dashboard() {
+  playwright-cli show --kill >/dev/null 2>&1
+}
+
+playwright-cli show --port=0 "$@" 2>&1 | {
+  status=1
+  while IFS= read -r line; do
+    printf '%s\n' "$line"
+    case $line in
+      'Listening on '*)
+        status=0
+        open_url "${line#Listening on }" >/dev/null 2>&1 &
+        ;;
+      'Dashboard is running pid='*)
+        status=2
+        ;;
+    esac
+  done
+  exit "$status"
+} &
+reader_pid=$!
+
+# A background pipeline lets a signal interrupt `wait` at once; sh defers traps until a
+# foreground pipeline finishes. Stopping the dashboard ends the pipeline.
+on_signal() {
+  stop_dashboard
+  wait "$reader_pid"
+  exit "$1"
+}
+trap 'on_signal 129' HUP
+trap 'on_signal 130' INT
+trap 'on_signal 143' TERM
+
+# `show --port` returns only once its dashboard exits, so a normal exit leaves nothing to stop,
+# and must not stop a dashboard that another invocation started.
+wait "$reader_pid"
+status=$?
+
+if [ "$status" -eq 2 ]; then
+  echo "playwright-dashboard: already running; stop it with playwright-cli show --kill" >&2
+fi
+exit "$status"

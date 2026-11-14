@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Chromium for playwright-cli, which ~/.playwright/cli.config.json launches through this script so
+# the config stays portable. Set PLAYWRIGHT_CHROMIUM in ~/.profile.local to use another binary.
+
+if [ -n "${PLAYWRIGHT_CHROMIUM-}" ]; then
+  exec "$PLAYWRIGHT_CHROMIUM" "$@"
+fi
+
+case $(uname -s) in
+  Darwin)
+    for apps_dir in "$HOME/Applications" /Applications; do
+      for app_bin in Chromium.app/Contents/MacOS/Chromium \
+          "Google Chrome.app/Contents/MacOS/Google Chrome"; do
+        if [ -x "$apps_dir/$app_bin" ]; then
+          exec "$apps_dir/$app_bin" "$@"
+        fi
+      done
+    done
+    ;;
+  *)
+    for name in chromium chromium-browser google-chrome-stable google-chrome chrome; do
+      if browser_bin=$(command -v "$name" 2>/dev/null); then
+        exec "$browser_bin" "$@"
+      fi
+    done
+    ;;
+esac
+
+echo "playwright-chromium: no Chromium or Chrome found; set PLAYWRIGHT_CHROMIUM" >&2
+exit 127
