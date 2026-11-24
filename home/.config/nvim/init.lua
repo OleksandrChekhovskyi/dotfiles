@@ -772,8 +772,9 @@ require("diffview").setup({
       { "n", "zi", "zi", { desc = "Toggle foldenable" } },
       -- The inline layout is not in diff mode, so built-in ]c / [c do nothing there; diffview
       -- maps them to its own hunk jumps instead, which remap = true lets these reach.
-      { "n", "<C-n>", "]c", { remap = true, desc = "Next hunk" } },
-      { "n", "<C-p>", "[c", { remap = true, desc = "Previous hunk" } },
+      -- Use Neovim's canonical key spelling so Diffview can save and restore these mappings.
+      { "n", "<C-N>", "]c", { remap = true, desc = "Next hunk" } },
+      { "n", "<C-P>", "[c", { remap = true, desc = "Previous hunk" } },
       { "n", "<leader>e", diffview_actions.toggle_files, { desc = "Toggle file panel" } },
       { "n", "gf", diffview_goto_file, { desc = "Open the file at the matching line" } },
     },
@@ -858,14 +859,27 @@ require("gitsigns").setup({
     local map = function(mode, l, r, desc)
       vim.keymap.set(mode, l, r, { buf = bufnr, desc = desc })
     end
-    map("n", "]h", function() gs.nav_hunk("next") end, "Next hunk")
-    map("n", "[h", function() gs.nav_hunk("prev") end, "Previous hunk")
+    map("n", "]h", function()
+      gs.nav_hunk("next", { wrap = false, navigation_message = false })
+    end, "Next hunk")
+    map("n", "[h", function()
+      gs.nav_hunk("prev", { wrap = false, navigation_message = false })
+    end, "Previous hunk")
     map("n", "<leader>ghs", gs.stage_hunk, "Stage hunk")
     map("n", "<leader>ghr", gs.reset_hunk, "Reset hunk")
     map("n", "<leader>ghp", gs.preview_hunk, "Preview hunk")
     map("n", "<leader>ghb", function() gs.blame_line({ full = true }) end, "Blame line")
   end,
 })
+
+-- Diffview temporarily maps Ctrl-N/P on shared file buffers. Global aliases let its
+-- buffer-local mappings take precedence without deleting the editor shortcuts on detach.
+vim.keymap.set("n", "<C-n>", function()
+  return vim.fn.maparg("]h", "n", false, true).buffer == 1 and "]h" or "<C-n>"
+end, { expr = true, remap = true, desc = "Next hunk" })
+vim.keymap.set("n", "<C-p>", function()
+  return vim.fn.maparg("[h", "n", false, true).buffer == 1 and "[h" or "<C-p>"
+end, { expr = true, remap = true, desc = "Previous hunk" })
 
 -- Autocompletion
 require("blink.cmp").setup({
