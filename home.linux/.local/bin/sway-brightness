@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Adjust the focused Sway output via brightnessctl or DDC/CI (ddcutil)."""
+
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+
+DRM = Path("/sys/class/drm")
+CACHE_SECONDS = 5
+
+
+def ddc_bus(connector):
+    # DisplayPort AUX adapters can be children of the connector instead of the ddc link.
+    adapters = list(connector.glob("i2c-*"))
+    if not adapters:
+        adapters = [(connector / "ddc").resolve()]
+    if len(adapters) == 1:
+        name = adapters[0].name
+        if name.startswith("i2c-") and name[4:].isdecimal():
+            return name[4:]
+    return None
+
+
+def ddc(targets, *command):
+    for target in targets:
+        result = subprocess.run(
+            ["ddcutil", "--terse", *target, *command], capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            return result.stdout
+    raise RuntimeError((result.stderr or result.stdout).strip() or "ddcutil failed")
+
+
+def brightness(state, targets, direction):
+    cached = state.read().split()
+    # A failed or interrupted write must not leave a cached level behind.
+    state.seek(0)
+    state.truncate()
+    try:
+        stamp, level, maximum = cached
+        timestamp = float(stamp)
+        level, maximum = int(level), int(maximum)
+        if not 0 <= time.monotonic() - timestamp < CACHE_SECONDS:
+            raise ValueError
+    except ValueError:
+        fields = ddc(targets, "getvcp", "10").split()
+        if len(fields) != 5 or fields[:3] != ["VCP", "10", "C"]:
+            raise RuntimeError("monitor did not report a continuous brightness value")
+        level, maximum = map(int, fields[3:])
+        timestamp = time.monotonic()
+    if not 0 <= level <= maximum or maximum == 0:
+        raise RuntimeError("monitor reported an invalid brightness range")
+
+    step = max(1, (maximum + 10) // 20)
+    target = max(0, min(maximum, level + direction * step))
+    if target != level:
+        ddc(targets, "--noverify", "setvcp", "10", str(target))
+        timestamp = time.monotonic()
+    state.write(f"{timestamp} {target} {maximum}\n")
+
+
+def main():
+    steps = {"up": 1, "down": -1}
+    if len(sys.argv) != 2 or sys.argv[1] not in steps:
+        sys.exit("Usage: sway-brightness up|down")
+    direction = steps[sys.argv[1]]
+    outputs = json.loads(subprocess.check_output(["swaymsg", "-r", "-t", "get_outputs"]))
+    output = next((o["name"] for o in outputs if o["focused"] and o["active"]), None)
+    if not output:
+        raise RuntimeError("no focused display")
+    if output.startswith(("eDP-", "LVDS-", "DSI-")):
+        os.execlp("brightnessctl", "brightnessctl", "--class=backlight", "set",
+                  "5%+" if direction > 0 else "5%-")
+
+    connectors = [c for c in DRM.glob(f"card*-{output}")
+                  if (c / "enabled").read_text().strip() == "enabled"]
+    if len(connectors) != 1:
+        raise RuntimeError(f"no unique active DRM connector found for {output}")
+    connector = connectors[0]
+    edid = (connector / "edid").read_bytes()
+    if len(edid) < 128:
+        raise RuntimeError(f"no monitor EDID found for {output}")
+
+    bus = ddc_bus(connector)
+    targets = [("--bus", bus, "--skip-ddc-checks")] if bus is not None else []
+    targets.append(("--edid", edid[:128].hex()))
+    identity = hashlib.sha256(connector.name.encode() + b"\0" + edid).hexdigest()
+    runtime = Path(os.environ["XDG_RUNTIME_DIR"])
+    with (runtime / f"sway-brightness-{identity}").open("a+") as state:
+        fcntl.flock(state, fcntl.LOCK_EX)
+        state.seek(0)
+        brightness(state, targets, direction)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (KeyError, OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
+        sys.exit(f"sway-brightness: {exc}")

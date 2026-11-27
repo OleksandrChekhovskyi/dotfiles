@@ -126,6 +126,9 @@ Common values include blue (`1;34`), magenta (`1;35`), and cyan (`1;36`). Export
 variables are inherited by child processes; system services need environment configuration through
 their service manager instead.
 
+On Linux, put machine-specific Sway settings, such as monitor layout, in
+`~/.config/sway/local.conf`. Sway loads it last if it exists; it stays outside the repo.
+
 ## Playwright CLI
 
 Global npm packages install under `~/.local`, whose `bin/` is on `PATH`. `~/.npmrc` also skips
