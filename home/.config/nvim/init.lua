@@ -1118,19 +1118,25 @@ map("n", "<leader>o", function()
   end
   vim.cmd("Neotree focus")
 end, { desc = "Toggle file explorer focus" })
--- Oil-style browsing: "-" opens the current file's parent directory in the current
--- window with the file selected. The per-window state is separate from the sidebar's.
+-- Oil-style browsing: "-" shows the current file in a directory view in the current
+-- window, separate from the sidebar's. It comes back as it was left if it contains the file.
 map("n", "-", function()
   local file = vim.api.nvim_buf_get_name(0)
   local args = { source = "filesystem", position = "current" }
   if vim.bo.buftype == "" and file ~= "" and vim.uv.fs_stat(file) then
-    args.dir = vim.fs.dirname(file)
+    local win = vim.api.nvim_get_current_win()
+    local root = require("neo-tree.sources.manager").get_state("filesystem", nil, win).path
+    if not (root and vim.fs.relpath(root, file)) then
+      local cwd = vim.uv.cwd()
+      root = cwd and vim.fs.relpath(cwd, file) and cwd or vim.fs.dirname(file)
+    end
+    args.dir = root
     args.reveal_file = file
   else
     args.dir = vim.uv.cwd()
   end
   require("neo-tree.command").execute(args)
-end, { desc = "Open parent directory" })
+end, { desc = "Open directory view" })
 map("n", "<leader>ge", function()
   require("neo-tree.command").execute({ source = "git_status", toggle = true })
 end, { desc = "Git explorer" })
